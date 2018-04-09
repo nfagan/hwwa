@@ -20,9 +20,15 @@ conf.(const.config_id) = true;
 %   PATHS
 PATHS = struct();
 PATHS.data_root = '/Volumes/My Passport/NICK/Chang Lab 2016/hww_gng/data';
+PATHS.repositories = '/Volumes/My Passport/NICK/Chang Lab 2016/repositories';
+
+%   DEPENDENCIES
+DEPENDS = struct();
+DEPENDS.repositories = { 'shared_utils', 'eyelink' };
 
 %   EXPORT
 conf.PATHS = PATHS;
+conf.DEPENDS = DEPENDS;
 
 if ( do_save )
   hwwa.config.save( conf );

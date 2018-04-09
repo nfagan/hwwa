@@ -1,5 +1,7 @@
 function const = constants()
 
+%   CONSTANTS -- Get constants used to define the config file structure.
+
 const = struct();
 
 config_folder = fileparts( which(sprintf('hwwa.config.%s', mfilename)) );
