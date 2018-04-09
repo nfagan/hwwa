@@ -25,6 +25,7 @@ PATHS.repositories = '/Volumes/My Passport/NICK/Chang Lab 2016/repositories';
 %   DEPENDENCIES
 DEPENDS = struct();
 DEPENDS.repositories = { 'shared_utils', 'eyelink' };
+DEPENDS.others = { '/example/' };
 
 %   EXPORT
 conf.PATHS = PATHS;

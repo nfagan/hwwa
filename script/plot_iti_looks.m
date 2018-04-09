@@ -22,24 +22,33 @@ for i = 1:numel(bound_mats)
     all_labels = fcat.like( labels );
   end
   
-  [y, I] = keepeach( labels', {'date', 'trial_type'} );
+  [y, I] = keepeach( labels', {'date', 'trial_type', 'correct', 'initiated'} );
   
   for j = 1:numel(I)
-    N = numel( intersect(I{j}, find(labels, {'no_errors', 'wrong_go_nogo'})) );
-    prop = sum( bounds.bounds(I{j}, :), 1 ) / N;
+%     ind = intersect( I{j}, find(labels, 'correct_true') );
+    ind = I{j};
+    N = numel( ind );
+    prop = sum( bounds.bounds(ind, :), 1 ) / N;
     all_props = [ all_props; prop ];
   end
+  
+%   for j = 1:numel(I)
+%     N = numel( intersect(I{j}, find(labels, {'no_errors', 'wrong_go_nogo'})) );
+%     prop = sum( bounds.bounds(I{j}, :), 1 ) / N;
+%     all_props = [ all_props; prop ];
+%   end
   
   append( all_labels, y );
   
   t = bounds.time;
 end
 
-hwwa.add_drug_labels( all_labels );
-
 %%
 
+fname_prefix = 'incorrect_only';
+
 dat = labeled( all_props, all_labels );
+only( dat, {'correct_false', 'initiated_true'} );
 
 pl = plotlabeled();
 pl.x = t;
@@ -47,10 +56,10 @@ pl.error_func = @plotlabeled.nansem;
 pl.summary_func = @plotlabeled.nanmean;
 pl.smooth_func = @(x) smooth(x, 100);
 pl.add_smoothing = true;
-pl.panel_order = { 'delay__0.01', 'go_trial' };
 pl.y_lims = [0, 0.6];
 
-collapsecat( dat, setdiff(getcats(dat), {'drug', 'cue_delay'}) );
+% collapsecat( dat, setdiff(getcats(dat), {'drug', 'cue_delay'}) );
+collapsecat( dat, 'trial_type' );
 
 prune( dat );
 
@@ -61,6 +70,7 @@ ylabel( axs(1), 'p in fix-square bounds' );
 
 shared_utils.io.require_dir( save_p );
 fname = strjoin( incat(dat, {'drug', 'trial_type'}), '_' );
+fname = sprintf( '%s_%s', fname_prefix, fname );
 
 shared_utils.plot.save_fig( gcf, fullfile(save_p, fname), {'epsc', 'png', 'fig'}, true );
 

@@ -8,14 +8,16 @@ trials_mats = hwwa.require_intermediate_mats( trials_p );
 
 all_pupil = [];
 
+evt = 'go_nogo_cue_onset';
+
 for i = 1:numel(trials_mats)
   hwwa.progress( i, numel(trials_mats) );
   
   trials = shared_utils.io.fload( trials_mats{i} );
   labs = shared_utils.io.fload( fullfile(label_p, trials.unified_filename) );
   
-  pupil = trials.trials('go_nogo_cue_onset').samples('pupilSize');
-  t = trials.trials('go_nogo_cue_onset').time;
+  pupil = trials.trials(evt).samples('pupilSize');
+  t = trials.trials(evt).time;
   
   if ( i == 1 )
     all_labels = fcat.like( labs.labels );
@@ -24,8 +26,6 @@ for i = 1:numel(trials_mats)
   append( all_labels, labs.labels );
   all_pupil = [ all_pupil; pupil ];
 end
-
-hwwa.add_drug_labels( all_labels );
 
 %%
 
@@ -48,7 +48,7 @@ end
 
 dat = labeled( z_pupil, all_labels );
 
-eachindex( dat, {'date', 'trial_type'}, @rownanmean );
+eachindex( dat, {'date'}, @rownanmean );
 
 prune( dat );
 

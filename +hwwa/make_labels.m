@@ -54,12 +54,20 @@ for i = 1:numel(mats)
   setcat( f, 'trial_type', trial_types );
   
   %
-  %   data
+  %   date info
   %
   
   addcat( f, {'date', 'drug', 'unified_filename'} );
   setcat( f, 'date', unified.date );
   setcat( f, 'unified_filename', unified_filename );
+  
+  %
+  %   derived labels
+  %
+  
+  hwwa.add_correct_labels( f );
+  hwwa.add_initiated_labels( f );
+  hwwa.add_drug_labels( f );
   
   labels = struct();
   labels.labels = f;

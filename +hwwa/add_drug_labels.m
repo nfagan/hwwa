@@ -1,6 +1,8 @@
 function labs = add_drug_labels(labs)
 
-assert( isa(labs, 'fcat') );
+import shared_utils.assertions.*;
+
+assert__isa( labs, 'fcat', 'labels' );
 
 saline_days = { '0215', '0221', '0228', '0302', '0303', '0305' };
 serotonin_days = { '0214', '0216', '0220', '0222', '0301', '0304' };
