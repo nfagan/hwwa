@@ -21,35 +21,44 @@ for i = 1:numel(label_mats)
   end
 end
 
-saline_days = { '0215', '0221', '0228', '0302', '0303', '0305' };
-serotonin_days = { '0214', '0216', '0220', '0222', '0301', '0304' };
+date_dir = datestr( now, 'mmddyy' );
 
-for i = 1:numel(saline_days)
-  ind = find( summary, [ saline_days{i}, '.mat' ] );
-  assert( ~isempty(ind) );
-  summary(ind, 'drug') = 'saline';
-end
-for i = 1:numel(serotonin_days)
-  ind = find( summary, [ serotonin_days{i}, '.mat' ] );
-  assert( ~isempty(ind) );
-  summary(ind, 'drug') = '5-htp';
-end
-
-save_p = fullfile( conf.PATHS.data_root, 'plots', 'behavior', datestr(now, 'mmddyy') );
+stats_p = fullfile( conf.PATHS.data_root, 'analyses', 'behavior', date_dir );
+save_p = fullfile( conf.PATHS.data_root, 'plots', 'behavior', date_dir );
 shared_utils.io.require_dir( save_p );
+shared_utils.io.require_dir( stats_p );
 
 %%  rt, per cue delay
 
 ind = intersect( find(summary.data > 0), find(summary, {'no_errors', 'wrong_go_nogo'}) );
 
-rt = summary( ind );
+rt = prune( summary(ind) );
+
+rt = eachindex( rt', {'date', 'cue_delay', 'trial_outcome'}, @rownanmean );
 
 pl = plotlabeled();
 pl.error_func = @plotlabeled.sem;
 pl.group_order = { 'delay__0.01' };
 pl.bar( rt, 'drug', 'cue_delay', 'trial_outcome' );
 
-shared_utils.plot.save_fig( gcf, fullfile(save_p, 'rt'), {'fig', 'epsc', 'png'}, true );
+fname = strjoin( incat(rt, {'date', 'cue_delay', 'drug'}), '_' );
+fname = sprintf( 'rt_%s', fname );
+
+shared_utils.plot.save_fig( gcf, fullfile(save_p, fname), {'fig', 'epsc', 'png'}, true );
+
+%%  rt anova
+
+full_stats_p = fullfile( stats_p, 'rt' );
+shared_utils.io.require_dir( full_stats_p );
+
+grps = { 'cue_delay', 'drug' };
+
+hwwa.write_anova_tables( rt, grps, full_stats_p, '' );
+
+%%  means + devs
+
+grps = { 'cue_delay' };
+hwwa.write_anova_summary_tables( rt, grps, full_stats_p );
 
 %%  rt, across cue delays
 
@@ -87,7 +96,53 @@ shared_utils.plot.save_fig( gcf, fullfile(save_p, 'n_initiated_all_trials') ...
 saline_data = data( find(n_initiated, 'saline') );
 serotonin_data = data( find(n_initiated, '5-htp') );
 
+sal_means = mean( saline_data );
+sal_devs = std( saline_data );
+htp_means = mean( serotonin_data );
+htp_devs = std( serotonin_data );
+
 [~, p] = ttest( saline_data, serotonin_data );
+
+%%  broken cues 
+
+labels = getlabels( summary );
+
+[y, I] = keepeach( labels', {'date', 'trial_type', 'cue_delay'} );
+data = zeros( size(y, 1), 1 );
+
+for i = 1:numel(I)
+  initiated_ind = intersect( I{i}, find(labels, 'initiated_true') );
+  broke_fix_ind = intersect( I{i}, find(labels, 'broke_cue_fixation') );
+  
+  data(i) = numel(broke_fix_ind) / numel(initiated_ind);
+end
+
+p_broke_cue = labeled( data, y );
+
+pl = plotlabeled();
+pl.error_func = @plotlabeled.sem;
+pl.panel_order = 'delay__0.01';
+
+pl.bar( p_broke_cue, 'drug', 'trial_type', 'cue_delay' );
+
+fname = strjoin( incat(p_broke_cue, {'drug', 'trial_type', 'cue_delay'}), '_' );
+fname = sprintf( 'p_broke_cue_fix_%s', fname );
+
+shared_utils.plot.save_fig( gcf, fullfile(save_p, fname), {'fig', 'epsc', 'png'}, true );
+
+%%  broke cue anova
+
+full_stats_p = fullfile( stats_p, 'broke_cue' );
+shared_utils.io.require_dir( full_stats_p );
+
+grps = { 'drug', 'cue_delay' };
+
+hwwa.write_anova_tables( p_broke_cue, grps, full_stats_p, 'no_cue_delay' );
+
+%%  means + devs
+
+grps = { 'cue_delay' };
+hwwa.write_anova_summary_tables( p_broke_cue, grps, full_stats_p );
 
 %%  percent correct
 
@@ -117,6 +172,20 @@ pl.bar( p_correct, 'drug', 'cue_delay', 'trial_type' );
 
 shared_utils.plot.save_fig( gcf, fullfile(save_p, 'p_correct') ...
   , {'fig', 'epsc', 'png'}, true );
+
+%%
+
+full_stats_p = fullfile( stats_p, 'p_correct' );
+shared_utils.io.require_dir( full_stats_p );
+
+grps = { 'trial_type' };
+
+hwwa.write_anova_tables( p_correct, grps, full_stats_p, '' );
+
+%%  means + devs
+
+grps = { 'trial_type' };
+hwwa.write_anova_summary_tables( p_correct, grps, full_stats_p );
 
 %% number correct
 
@@ -169,6 +238,9 @@ z_each = { 'drug' };
 
 d_prime_labs = fcat.like( labs );
 d_prime_data = zeros( size(data, 1)/2, 1 );
+C_data = zeros( size(d_prime_data) );
+B_data = zeros( size(C_data) );
+C_prime = zeros( size(C_data) );
 stp = 1;
 
 for i = 1:numel(I)
@@ -178,32 +250,76 @@ for i = 1:numel(I)
   go_percent = data(go_ind);
   nogo_percent = (1 - data(nogo_ind));
   
-  z_hit = icdf( 'normal', go_percent, mean(go_percent), std(go_percent) );
-  z_fa = icdf( 'normal', nogo_percent, mean(nogo_percent), std(nogo_percent) );
+  z_hit = norminv( go_percent, mean(go_percent), std(go_percent) );
+  z_fa = norminv( nogo_percent, mean(nogo_percent), std(nogo_percent) );
   
   d_prime = z_hit - z_fa;
   
-  d_prime_data(stp:stp+numel(d_prime)-1) = d_prime;
+  c_dat = -0.5 .* (z_hit + z_fa);
+  
+  b = exp( c_dat .* d_prime );
+  c_prime = c_dat ./ d_prime;
+  
+  assign_seq = stp:stp+numel(d_prime)-1;
+  
+  d_prime_data(assign_seq) = d_prime;
+  C_data(assign_seq) = c_dat;
+  B_data(assign_seq) = b;
+  C_prime(assign_seq) = c_prime;
   
   stp = stp + numel(d_prime);
   
   append( d_prime_labs, labs(go_ind) );
 end
 
-d_prime = labeled( d_prime_data, d_prime_labs );
+%%
+
+plot_type = 'b';
+
+switch ( plot_type )
+  case 'd_prime'
+    plt_data = d_prime_data;
+  case 'c'
+    plt_data = C_data;
+  case 'c_prime'
+    plt_data = C_prime;
+  case 'b'
+    plt_data = B_data;
+  otherwise
+    error( 'Unrecognized plot type "%s".', plot_type );
+end
+
+plt_sdt = labeled( plt_data, d_prime_labs );
 
 pl = plotlabeled();
 pl.error_func = @plotlabeled.std;
 pl.one_legend = true;
 
-pl.bar( d_prime, 'drug', 'cue_delay', 'trial_type' );
+pl.bar( plt_sdt, 'drug', 'cue_delay', 'trial_type' );
 
-saline_data = d_prime_data( find(d_prime_labs, 'saline') );
-serotonin_data = d_prime_data( find(d_prime_labs, '5-htp') );
+means = eachindex( plt_sdt', 'drug', @rowmean );
+devs = each( plt_sdt', 'drug', @(x) std(x, [], 1) );
 
-[~, p] = ttest( saline_data, serotonin_data );
+m_t = table( Container.from(means), 'drug' );
+d_t = table( Container.from(devs), 'drug' );
 
-shared_utils.plot.save_fig( gcf, fullfile(save_p, 'd_prime'), {'fig', 'epsc', 'png'}, true );
+saline_data = plt_data( find(d_prime_labs, 'saline') );
+serotonin_data = plt_data( find(d_prime_labs, '5-htp') );
+
+sal_mean = mean( saline_data );
+htp_mean = mean( serotonin_data );
+sal_dev = std( saline_data );
+htp_dev = std( serotonin_data );
+
+[~, p, ~, stats] = ttest( saline_data, serotonin_data );
+stats = struct2table( stats );
+stats(:, 'p') = { p };
+
+shared_utils.plot.save_fig( gcf, fullfile(save_p, plot_type), {'fig', 'epsc', 'png'}, true );
+
+writetable( m_t, fullfile(stats_p, ['means_', plot_type, '.csv']), 'WriteRowNames', true );
+writetable( d_t, fullfile(stats_p, ['devs_', plot_type, '.csv']), 'WriteRowNames', true );
+writetable( stats, fullfile(stats_p, ['stats_', plot_type, '.csv']), 'WriteRowNames', true );
 
 
 

@@ -24,12 +24,17 @@ PATHS.repositories = '/Volumes/My Passport/NICK/Chang Lab 2016/repositories';
 
 %   DEPENDENCIES
 DEPENDS = struct();
-DEPENDS.repositories = { 'shared_utils', 'eyelink' };
+DEPENDS.repositories = { 'shared_utils', 'eyelink', 'plexon', 'spike_helpers' };
 DEPENDS.others = { '/example/' };
+
+%   PLEX
+PLEX = struct();
+PLEX.sync_channel = 'AI01';
 
 %   EXPORT
 conf.PATHS = PATHS;
 conf.DEPENDS = DEPENDS;
+conf.PLEX = PLEX;
 
 if ( do_save )
   hwwa.config.save( conf );

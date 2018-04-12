@@ -29,7 +29,8 @@ end
 
 %%
 
-do_zscore = true;
+do_zscore = false;
+do_save = false;
 
 if ( do_zscore )
   I = findall( all_labels, 'date' );
@@ -72,9 +73,43 @@ end
 
 xlabel( axs(1), 'time (ms) from fixation' );
 
-shared_utils.io.require_dir( save_p );
 fname = sprintf( '%s_%s_pupil', z_str, strjoin(incat(dat, {'drug', 'trial_type'}), '_') );
 
-shared_utils.plot.save_fig( gcf, fullfile(save_p, fname), {'epsc', 'fig', 'png'}, true );
+if ( do_save )
+  shared_utils.io.require_dir( save_p );
+  shared_utils.plot.save_fig( gcf, fullfile(save_p, fname), {'epsc', 'fig', 'png'}, true );
+end
 
+%%  bar plot
 
+do_save = true;
+
+z_pupil = all_pupil;
+
+dat = labeled( nanmean(z_pupil, 2), all_labels );
+
+eachindex( dat, {'date'}, @rownanmean );
+
+prune( dat );
+
+means = eachindex( dat', 'drug', @rownanmean );
+devs = each( dat', 'drug', @(x) nanstd(x, [], 1) );
+
+sal = only( dat', 'saline' );
+htp = only( dat', '5-htp' );
+
+[~, p, ~, stats] = ttest2( sal.data, htp.data );
+
+pl = plotlabeled();
+pl.error_func = @plotlabeled.nansem;
+pl.summary_func = @plotlabeled.nanmean;
+
+axs = bar( pl, dat, 'drug', {'trial_type'}, 'trial_type' );
+ylabel( axs(1), 'non-normalized pupil' );
+
+fname = sprintf( 'bar_%s_%s_pupil', z_str, strjoin(incat(dat, {'drug', 'trial_type'}), '_') );
+
+if ( do_save )
+  shared_utils.io.require_dir( save_p );
+  shared_utils.plot.save_fig( gcf, fullfile(save_p, fname), {'epsc', 'fig', 'png'}, true );
+end

@@ -46,6 +46,7 @@ end
 %%
 
 fname_prefix = 'incorrect_only';
+do_save = false;
 
 dat = labeled( all_props, all_labels );
 only( dat, {'correct_false', 'initiated_true'} );
@@ -68,9 +69,11 @@ axs = lines( pl, dat, 'drug', {'trial_type'} );
 xlabel( axs(1), 'time (ms) from iti onset' );
 ylabel( axs(1), 'p in fix-square bounds' );
 
-shared_utils.io.require_dir( save_p );
 fname = strjoin( incat(dat, {'drug', 'trial_type'}), '_' );
 fname = sprintf( '%s_%s', fname_prefix, fname );
 
-shared_utils.plot.save_fig( gcf, fullfile(save_p, fname), {'epsc', 'png', 'fig'}, true );
+if ( do_save )
+  shared_utils.io.require_dir( save_p );
+  shared_utils.plot.save_fig( gcf, fullfile(save_p, fname), {'epsc', 'png', 'fig'}, true );
+end
 

@@ -15,7 +15,12 @@ mats = hwwa.require_intermediate_mats( params.files, input_p, params.files_conta
 for i = 1:numel(mats)
   hwwa.progress( i, numel(mats) );
   
-  if ( hwwa.conditional_skip_file(mats{i}, params.overwrite) )
+  [~, unified_id] = fileparts( mats{i} );
+  unified_filename = [ unified_id, '.mat' ];
+  
+  output_filename = fullfile( output_p, unified_filename );
+  
+  if ( hwwa.conditional_skip_file(output_filename, params.overwrite) )
     continue;
   end
   
@@ -23,16 +28,14 @@ for i = 1:numel(mats)
   
   raw_data = errors_to_string( raw.DATA );
   
-  [~, unified_filename] = fileparts( mats{i} );
-  unified_filename = [ unified_filename, '.mat' ];
-  
   raw.DATA = raw_data;
   raw.unified_filename = unified_filename;
+  raw.unified_id = unified_id;
   raw.raw_subdir = raw_subdir;
   
   shared_utils.io.require_dir( output_p );
   
-  save( fullfile(output_p, unified_filename), 'raw' );
+  save( output_filename, 'raw' );
 end
 
 end

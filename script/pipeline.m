@@ -1,6 +1,6 @@
 %%  pipeline
 
-inputs = { 'overwrite', false, 'files_containing', [] };
+inputs = { 'overwrite', false, 'files_containing', '0410' };
 
 %%
 
@@ -12,12 +12,18 @@ hwwa.make_edfs( inputs{:} );
 
 %%
 
+hwwa.make_sync_times( inputs{:} );
+hwwa.make_spikes( inputs{:} );
+
+%%
+
 hwwa.make_labels( inputs{:} );
 
 %%
 
 hwwa.make_events( inputs{:} );
 hwwa.make_el_events( inputs{:} );
+hwwa.make_plex_events( inputs{:} );
 
 %%
 

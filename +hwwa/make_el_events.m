@@ -20,6 +20,7 @@ for i = 1:numel(mats)
   
   if ( ~shared_utils.io.fexists(events_file) )
     fprintf( '\n Skipping "%s" because the events file does not exist.', unified_filename );
+    continue;
   end
   
   events = shared_utils.io.fload( events_file );
