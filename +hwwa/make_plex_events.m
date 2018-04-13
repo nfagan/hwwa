@@ -11,7 +11,7 @@ params = hwwa.parsestruct( defaults, varargin );
 mats = hwwa.require_intermediate_mats( params.files, sync_p, params.files_containing );
 
 for i = 1:numel(mats)
-  hwwa.progress( i, numel(mats) );
+  hwwa.progress( i, numel(mats), mfilename );
   
   sync_file = shared_utils.io.fload( mats{i} );
   unified_filename = sync_file.unified_filename;

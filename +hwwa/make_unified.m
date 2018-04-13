@@ -13,7 +13,7 @@ params = hwwa.parsestruct( defaults, varargin );
 mats = hwwa.require_intermediate_mats( params.files, input_p, params.files_containing );
 
 for i = 1:numel(mats)
-  hwwa.progress( i, numel(mats) );
+  hwwa.progress( i, numel(mats), mfilename );
   
   [~, unified_id] = fileparts( mats{i} );
   unified_filename = [ unified_id, '.mat' ];

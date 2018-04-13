@@ -10,7 +10,7 @@ params = hwwa.parsestruct( defaults, varargin );
 mats = hwwa.require_intermediate_mats( params.files, input_p, params.files_containing );
 
 for i = 1:numel(mats)
-  hwwa.progress( i, numel(mats) );
+  hwwa.progress( i, numel(mats), mfilename );
   
   unified = shared_utils.io.fload( mats{i} );
   unified_filename = unified.unified_filename;
@@ -33,9 +33,11 @@ for i = 1:numel(mats)
     event_key(evt_name) = j;
   end
   
+  has_iti = any( strcmp(event_key, 'iti') );
+  
   %   older sessions don't have an iti event time, but the preceding state
   %   is reward onset -- so just add the reward state time
-  if ( ~any(strcmp(event_key, 'iti')) )
+  if ( has_iti )
     reward_dur = unified.opts.TIMINGS.time_in.reward;
     error_dur = unified.opts.TIMINGS.time_in.error_go_nogo;
     
@@ -47,7 +49,8 @@ for i = 1:numel(mats)
     iti_ts = reward_ts + reward_dur;
     iti_ts(use_error_ts(:)) = error_ts(use_error_ts(:)) + error_dur;
     
-    event_key('iti') = numel( evt_names ) + 1;
+    current_n = numel( evt_names );
+    event_key('iti') = current_n + 1;
     event_times(:, end+1) = iti_ts;
   end
   

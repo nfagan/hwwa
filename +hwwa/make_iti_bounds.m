@@ -14,7 +14,7 @@ output_p = hwwa.get_intermediate_dir( 'iti_bounds' );
 sample_mats = hwwa.require_intermediate_mats( edf_p );
 
 for i = 1:numel(sample_mats)
-  hwwa.progress( i, numel(sample_mats) );
+  hwwa.progress( i, numel(sample_mats), mfilename );
   
   samples = fload( sample_mats{i} );
   

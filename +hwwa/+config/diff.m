@@ -21,8 +21,6 @@ function missing = diff(saved_conf, display)
 %     OUT:
 %       - `missing` (cell array of strings, {})
 
-import shared_utils.assertions.*;
-
 if ( nargin < 1 || isempty(saved_conf) )
   saved_conf = hwwa.config.load();
 else
@@ -75,7 +73,8 @@ end
 for i = 1:numel(shared)
   created_ = created.(shared{i});
   saved_ = saved.(shared{i});
-  missed = get_missing( created_, saved_, shared{i}, ntabs+1, missed, display );
+  child = join_func( shared{i} );
+  missed = get_missing( created_, saved_, child, ntabs+1, missed, display );
 end
 
 end

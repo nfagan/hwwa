@@ -19,13 +19,13 @@ conf.(const.config_id) = true;
 
 %   PATHS
 PATHS = struct();
-PATHS.data_root = '/Volumes/My Passport/NICK/Chang Lab 2016/hww_gng/data';
-PATHS.repositories = '/Volumes/My Passport/NICK/Chang Lab 2016/repositories';
+PATHS.data_root = '';
+PATHS.repositories = '';
 
 %   DEPENDENCIES
 DEPENDS = struct();
 DEPENDS.repositories = { 'shared_utils', 'eyelink', 'plexon', 'spike_helpers' };
-DEPENDS.others = { '/example/' };
+DEPENDS.others = { '' };
 
 %   PLEX
 PLEX = struct();

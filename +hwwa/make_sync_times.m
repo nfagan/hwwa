@@ -14,7 +14,7 @@ sync_channel = conf.PLEX.sync_channel;
 mats = hwwa.require_intermediate_mats( params.files, unified_p, params.files_containing );
 
 for i = 1:numel(mats)
-  hwwa.progress( i, numel(mats) );
+  hwwa.progress( i, numel(mats), mfilename );
   
   un_file = shared_utils.io.fload( mats{i} );
   

@@ -12,7 +12,7 @@ output_p = hwwa.get_intermediate_dir( 'spikes' );
 mats = hwwa.require_intermediate_mats( params.files, unified_p, params.files_containing );
 
 for i = 1:numel(mats)
-  hwwa.progress( i, numel(mats) );
+  hwwa.progress( i, numel(mats), mfilename );
   
   un_file = shared_utils.io.fload( mats{i} );
   

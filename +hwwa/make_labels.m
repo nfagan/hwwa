@@ -13,7 +13,7 @@ reprocess_fields = { 'cue_delay', 'trial_number', 'trial_outcome', 'trial_type' 
 ignore_fields = [ {'reaction_time', 'events', 'target_displacement'}, reprocess_fields ];
 
 for i = 1:numel(mats)
-  hwwa.progress( i, numel(mats) );
+  hwwa.progress( i, numel(mats), mfilename );
   
   unified = shared_utils.io.fload( mats{i} );
   unified_filename = unified.unified_filename;

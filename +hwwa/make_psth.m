@@ -30,7 +30,7 @@ assert( numel(event_names) == numel(look_back) && numel(look_back) == numel(look
 mats = hwwa.require_intermediate_mats( params.files, spike_p, params.files_containing );
 
 for i = 1:numel(mats)
-  hwwa.progress( i, numel(mats) );
+  hwwa.progress( i, numel(mats), mfilename );
   
   spikes = shared_utils.io.fload( mats{i} );
   unified_filename = spikes.unified_filename;
@@ -68,7 +68,7 @@ for i = 1:numel(mats)
     for k = 1:numel(units)
       unit = units(k);
       
-      [one_psth, psth_t] = one_unit( unit, evt_times, look_back, look_ahead, bin_size );
+      [one_psth, psth_t] = one_unit( unit, evt_times, look_back(j), look_ahead(j), bin_size );
       
       unit_labs = get_unit_labels( units(k) );
       

@@ -28,7 +28,7 @@ assert( numel(event_names) == numel(look_back) && numel(look_back) == numel(look
 mats = hwwa.require_intermediate_mats( params.files, edf_p, params.files_containing );
 
 parfor i = 1:numel(mats)
-  hwwa.progress( i, numel(mats) );
+  hwwa.progress( i, numel(mats), mfilename );
   
   edf = shared_utils.io.fload( mats{i} );
   unified_filename = edf.unified_filename;

@@ -1,5 +1,9 @@
-function progress(n, N)
+function progress(n, N, file)
 
-fprintf( '\n %d of %d', n, N );
+if ( nargin < 3 )
+  fprintf( '\n %d of %d', n, N );
+else
+  fprintf( '\n %s: %d of %d', file, n, N );
+end
 
 end
