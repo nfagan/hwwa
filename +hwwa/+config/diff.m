@@ -51,7 +51,7 @@ function missed = get_missing( created, saved, parent, ntabs, missed, display )
 
 %   GET_MISSING -- Identify missing fields, recursively.
 
-if ( ~isstruct(created) ), return; end
+if ( ~isstruct(created) || ~isstruct(saved) ), return; end
 
 created_fields = fieldnames( created );
 saved_fields = fieldnames( saved );
