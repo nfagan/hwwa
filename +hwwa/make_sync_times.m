@@ -43,9 +43,24 @@ for i = 1:numel(mats)
   mat_sync = un_file.opts.PLEX_SYNC;
   mat_sync_times = mat_sync.sync_times(1:mat_sync.sync_iteration-1);
   
-  assert( numel(mat_sync_times) == numel(pl2_starts), ['The number of pl2 sync' ...
-    , ' times (%d) does not correspond to the number of mat sync times (%d)'] ...
-    , numel(mat_sync_times), numel(pl2_starts) );
+  try
+    assert( numel(mat_sync_times) == numel(pl2_starts), ['The number of pl2 sync' ...
+      , ' times (%d) does not correspond to the number of mat sync times (%d)'] ...
+      , numel(mat_sync_times), numel(pl2_starts) );
+  catch err
+    warning( err.message );
+    
+    if ( isfield(un_file, 'plex_match_n_sync_times') && un_file.plex_match_n_sync_times )
+      
+      N = min( numel(mat_sync_times), numel(pl2_starts) );
+      
+      mat_sync_times = mat_sync_times(1:N);
+      pl2_starts = pl2_starts(1:N);
+      
+    else
+      continue;
+    end
+  end
   
   sync = struct();
   sync.mat = mat_sync_times(:);
