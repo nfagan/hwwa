@@ -12,6 +12,11 @@ evt = 'go_target_onset';
 % evt = 'go_target_offset';
 
 do_norm = false;
+baseline_evt = 'go_nogo_cue_onset';
+pre_baseline = -0.3;
+post_baseline = 0;
+% norm_func = @minus;
+norm_func = @rdivide;
 
 for i = 1:numel(psth_mats)
   hwwa.progress( i, numel(psth_mats) );
@@ -24,11 +29,11 @@ for i = 1:numel(psth_mats)
   psth_d = psth.data;
   
   if ( do_norm )
-    baseline_psth = psth_file.psth('go_nogo_cue_onset');
-    baseline_t = baseline_psth.time > -0.3 & baseline_psth.time <= 0;
-    baseline_d = mean( baseline_psth.data(:, baseline_t), 2 );
+    baseline_psth = psth_file.psth(baseline_evt);
+    baseline_t = baseline_psth.time > pre_baseline & baseline_psth.time <= post_baseline;
+    baseline_d = nanmean( baseline_psth.data(:, baseline_t), 2 );
     
-    psth_d = psth_d - baseline_d;
+    psth_d = norm_func( psth_d, baseline_d );
   end
   
   hwwa.merge_unit_labs( labs_file.labels, psth.labels );
@@ -58,6 +63,7 @@ save_p = fullfile( conf.PATHS.data_root, 'plots', 'spike', datestr(now, 'mmddyy'
 %%
 
 do_z = false;
+do_save = true;
 
 pl = plotlabeled();
 pl.error_func = @plotlabeled.nansem;
@@ -73,7 +79,7 @@ pl.x = t;
 % lines_are = { 'broke_cue' };
 % panels_are = { 'id' };
 
-panels_are = { 'id' };
+panels_are = { 'id', 'drug' };
 lines_are = { 'correct' };
 
 specificity = unique( [lines_are, panels_are, 'id'] );
@@ -119,8 +125,10 @@ fname = strjoin( incat(plt, specificity), '_' );
 fname = sprintf( 'psth_%s', fname );
 full_fname = fullfile( save_p, fname );
 
-shared_utils.io.require_dir( save_p );
-shared_utils.plot.save_fig( gcf, full_fname, {'epsc', 'png', 'fig'}, true );
+if ( do_save )
+  shared_utils.io.require_dir( save_p );
+  shared_utils.plot.save_fig( gcf, full_fname, {'epsc', 'png', 'fig'}, true );
+end
 
 end
 
@@ -171,6 +179,8 @@ end
 
 %%  cue onset | target onset
 
+do_save = true;
+
 pl = ContainerPlotter();
 pl.error_function = @(x, y) plotlabeled.nansem(x);
 pl.summary_function = @(x, y) nanmean( x, 1 );
@@ -209,7 +219,9 @@ fname = strjoin( incat(plt, specificity), '_' );
 fname = sprintf( 'psth_%s', fname );
 full_fname = fullfile( save_p, fname );
 
-shared_utils.io.require_dir( save_p );
-shared_utils.plot.save_fig( gcf, full_fname, {'epsc', 'png', 'fig'}, true );
+if ( do_save )
+  shared_utils.io.require_dir( save_p );
+  shared_utils.plot.save_fig( gcf, full_fname, {'epsc', 'png', 'fig'}, true );
+end
 
 end

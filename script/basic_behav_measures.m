@@ -5,7 +5,11 @@ labels_p = hwwa.get_intermediate_dir( 'labels' );
 
 label_mats = hwwa.require_intermediate_mats( [], labels_p, [] );
 
+summary = labeled();
+
 for i = 1:numel(label_mats)
+  hwwa.progress( i, numel(label_mats), mfilename );
+  
   labels = shared_utils.io.fload( label_mats{i} );
   unified = shared_utils.io.fload( fullfile(unified_p, labels.unified_filename) );
   
@@ -14,11 +18,7 @@ for i = 1:numel(label_mats)
   
   lab = labeled( rt, labels.labels );
   
-  if ( i == 1 )
-    summary = lab;
-  else
-    append( summary, lab );
-  end
+  append( summary, lab );
 end
 
 date_dir = datestr( now, 'mmddyy' );
@@ -36,12 +36,16 @@ rt = prune( summary(ind) );
 
 rt = eachindex( rt', {'date', 'cue_delay', 'trial_outcome'}, @rownanmean );
 
+delay_strs = rt('cue_delay');
+delays = shared_utils.container.cat_parse_double( 'delay__', delay_strs );
+[~, sort_i] = sort( delays );
+
 pl = plotlabeled();
 pl.error_func = @plotlabeled.sem;
-pl.group_order = { 'delay__0.01' };
+pl.group_order = delay_strs(sort_i);
 pl.bar( rt, 'drug', 'cue_delay', 'trial_outcome' );
 
-fname = strjoin( incat(rt, {'date', 'cue_delay', 'drug'}), '_' );
+fname = strjoin( incat(rt, {'date', 'drug'}), '_' );
 fname = sprintf( 'rt_%s', fname );
 
 shared_utils.plot.save_fig( gcf, fullfile(save_p, fname), {'fig', 'epsc', 'png'}, true );

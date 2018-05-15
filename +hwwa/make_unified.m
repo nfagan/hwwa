@@ -28,15 +28,34 @@ for i = 1:numel(mats)
   
   raw_data = errors_to_string( raw.DATA );
   
+  reg_map = get_region_map( input_p, unified_id );
+  
   raw.DATA = raw_data;
   raw.unified_filename = unified_filename;
   raw.unified_id = unified_id;
   raw.raw_subdir = raw_subdir;
+  raw.region_map = reg_map;
   
   shared_utils.io.require_dir( output_p );
   
   save( output_filename, 'raw' );
 end
+
+end
+
+function reg_map = get_region_map( input_p, unified_id )
+
+reg_map = [];
+
+reg_file = fullfile( input_p, [unified_id, '.regions'] );
+
+if ( ~shared_utils.io.fexists(reg_file) )
+  return;
+end
+
+regs = jsondecode( fileread(reg_file) );
+
+reg_map = structfun( @shared_utils.general.json_channels2num, regs, 'un', false );
 
 end
 

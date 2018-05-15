@@ -1,6 +1,6 @@
 %%  pipeline
 
-inputs = { 'overwrite', false, 'files_containing', '05' };
+inputs = { 'overwrite', true, 'files_containing', '05' };
 
 %%  save unified trial data
 

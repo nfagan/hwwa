@@ -16,7 +16,7 @@ mats = hwwa.require_intermediate_mats( params.files, aligned_p, params.files_con
 
 step_size = params.step_size;
 
-for i = 1:numel(mats)
+parfor i = 1:numel(mats)
   hwwa.progress( i, numel(mats), mfilename );
   
   lfp = shared_utils.io.fload( mats{i} );
@@ -34,6 +34,8 @@ for i = 1:numel(mats)
   power = containers.Map();
   
   for j = 1:numel(evts)
+    fprintf( '\n\t %d of %d', j, numel(evts) );
+    
     psth = lfp.psth( evts{j} );
     
     I = findall( psth.labels, 'id' );
@@ -41,6 +43,7 @@ for i = 1:numel(mats)
     all_chans = [];
     
     for k = 1:numel(I)
+      fprintf( '\n\t\t %d of %d', k, numel(I) );
       [one_chan, f, t] = per_channel( psth, params, w_size, step_size, I{k} );
       
       all_chans = [ all_chans; one_chan ];
@@ -57,7 +60,9 @@ for i = 1:numel(mats)
   
   shared_utils.io.require_dir( output_p );
   
-  hwwa.psave( output_filename, lfp, 'power' );
+  fprintf( '\n Saving ... ' );
+  hwwa.psave( output_filename, lfp, 'power', '-v7.3' );
+  fprintf( 'Done.' );
 end
 
 end
@@ -94,16 +99,20 @@ for i = 1:size(data, 3)
   
   one_window = data(:, :, i);
   
-  for k = 1:size(one_window, 1)
-%     [pow, f] = mtspectrumc( one_window(k, :), chronux_params );
-    [pow, f] = periodogram( one_window(k, :)', [], 1:200, sr );
-    
-    if ( k == 1 )
-      pxx = nan( size(one_window, 1), numel(pow) );
-    end
-    
-    pxx(k, :) = pow;
-  end
+  [pxx, f] = periodogram( one_window', [], 1:200, sr );
+  
+  pxx = pxx';
+  
+%   for k = 1:size(one_window, 1)
+% %     [pow, f] = mtspectrumc( one_window(k, :), chronux_params );
+%     [pow, f] = periodogram( one_window(k, :)', [], 1:200, sr );
+%     
+%     if ( k == 1 )
+%       pxx = nan( size(one_window, 1), numel(pow) );
+%     end
+%     
+%     pxx(k, :) = pow;
+%   end
 
   if ( i == 1 )
     all_c = nan( [size(pxx), size(data, 3)] );

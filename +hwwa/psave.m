@@ -1,4 +1,4 @@
-function psave( pathstr, var, alias )
+function psave( pathstr, var, varargin )
 
 %   PSAVE -- Save variable in parfor loop.
 %
@@ -15,10 +15,12 @@ function psave( pathstr, var, alias )
 %       - `alias` (char) |OPTIONAL|
 
 if ( nargin < 3 )
-  save( pathstr, 'var' );
+  save( pathstr, 'var', varargin{:} );
 else
+  alias = varargin{1};
+  varargin(1) = [];
   eval( sprintf('%s=var;', alias) );
-  save( pathstr, alias );
+  save( pathstr, alias, varargin{:} );
 end
 
 end

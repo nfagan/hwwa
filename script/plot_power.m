@@ -7,11 +7,19 @@ power_mats = hwwa.require_intermediate_mats( power_p );
 
 % evt = 'go_target_onset';
 % evt = 'go_target_acquired';
-% evt = 'go_nogo_cue_onset';
+evt = 'go_nogo_cue_onset';
 % evt = 'reward_onset';
-evt = 'go_target_offset';
+% evt = 'go_target_offset';
 
 do_norm = true;
+baseline_evt = 'go_nogo_cue_onset';
+pre_baseline = -0.3;
+post_baseline = 0;
+% norm_func = @minus;
+norm_func = @rdivide;
+
+psth_labs = fcat();
+psth_data = [];
 
 for i = 1:numel(power_mats)
   hwwa.progress( i, numel(power_mats) );
@@ -26,22 +34,18 @@ for i = 1:numel(power_mats)
   hwwa.merge_unit_labs( labs_file.labels, measure.labels );
   
   if ( do_norm )
-    baseline_p = power_file.measure('go_nogo_cue_onset');
-    baseline_ind = baseline_p.time >= -0.3 & baseline_p.time <= 0;
+    baseline_p = power_file.measure(baseline_evt);
+    baseline_t = baseline_p.time;
+    baseline_ind = baseline_t >= pre_baseline & baseline_t <= post_baseline;
     baseline_d = nanmean( baseline_p.data(:, :, baseline_ind), 3 );
     
     for j = 1:size(psth_d, 3)
-      psth_d(:, :, j) = psth_d(:, :, j) - baseline_d;
+      psth_d(:, :, j) = norm_func( psth_d(:, :, j), baseline_d );
     end
   end
   
-  if ( i == 1 )
-    psth_labs = labs_file.labels;
-    psth_data = psth_d;
-  else
-    append( psth_labs, labs_file.labels );
-    psth_data = [ psth_data; psth_d ];
-  end
+  append( psth_labs, labs_file.labels );
+  psth_data = [ psth_data; psth_d ];
   
   t = measure.time;
 end
@@ -62,12 +66,14 @@ save_p = fullfile( conf.PATHS.data_root, 'plots', 'raw_power', datestr(now, 'mmd
 cont = SignalContainer( psth_data, SparseLabels.from_fcat(psth_labs) );
 
 cont.frequencies = measure.frequencies;
-cont.start = t(1);
-cont.stop = t(end);
-cont.window_size = measure.window_size;
-cont.step_size = measure.step_size;
+cont.start = t(1) * 1e3;
+cont.stop = t(end) * 1e3;
+cont.window_size = measure.window_size * 1e3;
+cont.step_size = measure.step_size * 1e3;
 
 %%  correct - incorrect
+
+do_save = false;
 
 meaned = each1d( cont, {'trial_type', 'trial_outcome'}, @rowops.nanmean );
 meaned = rm( meaned, 'no_choice' );
@@ -84,12 +90,13 @@ meaned.spectrogram( {'trial_type', 'trial_outcome'} ...
   , 'shape', [1, 2] ...
   );
 
-shared_utils.io.require_dir( save_p );
+if ( do_save )
+  shared_utils.io.require_dir( save_p );
 
-fname = strjoin( flat_uniques(meaned, {'trial_type', 'trial_outcome'}), '_' );
-full_fname = fullfile( save_p, fname );
-shared_utils.plot.save_fig( gcf, full_fname, {'epsc', 'png', 'fig'}, true );
-
+  fname = strjoin( flat_uniques(meaned, {'trial_type', 'trial_outcome'}), '_' );
+  full_fname = fullfile( save_p, fname );
+  shared_utils.plot.save_fig( gcf, full_fname, {'epsc', 'png', 'fig'}, true );
+end
 %%  go - nogo
 
 meaned = each1d( cont, {'trial_type', 'trial_outcome'}, @rowops.nanmean );
