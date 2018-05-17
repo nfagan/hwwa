@@ -7,6 +7,9 @@ label_mats = hwwa.require_intermediate_mats( [], labels_p, [] );
 
 summary = labeled();
 
+g_starts = [0.1, 0.2, 0.3, 0.4];
+g_stops = [0.19, 0.29, 0.39, 0.5];
+
 for i = 1:numel(label_mats)
   hwwa.progress( i, numel(label_mats), mfilename );
   
@@ -16,7 +19,15 @@ for i = 1:numel(label_mats)
   rt = [ unified.DATA(:).reaction_time ];
   rt = rt(:);
   
-  lab = labeled( rt, labels.labels );
+  labs = labels.labels;
+  
+  hwwa.add_day_labels( labs );
+  hwwa.add_group_delay_labels( labs, g_starts, g_stops );
+  hwwa.add_data_set_labels( labs );
+  
+  prune( labs );
+  
+  lab = labeled( rt, labs );
   
   append( summary, lab );
 end
@@ -90,6 +101,68 @@ fname = joincat( prune(to_plt'), {'trial_type', 'drug', 'correct'} );
 
 shared_utils.plot.save_fig( gcf(), fullfile(save_p, fname), {'epsc', 'png', 'fig'} );
 
+%% p corr grouped delays
+
+do_save = true;
+
+labs = hwwa.add_day_labels( getlabels(summary) );
+
+only( labs, {'5-htp', 'saline'} );
+only( labs, {'050918', '051418', '051118', '050818', '051018'} );
+
+prune( labs );
+
+g_starts = [0.1, 0.2, 0.3, 0.4];
+g_stops = [0.19, 0.29, 0.39, 0.5];
+
+hwwa.add_group_delay_labels( labs, g_starts, g_stops );
+
+I = findall( labs, {'date', 'gcue_delay'} );
+
+dat = [];
+plabs = fcat();
+
+for i = 1:numel(I)
+  subset = labs(I{i});
+  
+  only( subset, 'initiated_true' );
+  
+  [y, corr_i] = keepeach( subset', {'trial_type'} );
+  
+  for j = 1:numel(corr_i)
+    
+    ind = corr_i{j};
+    
+    n_corr = numel( intersect(ind, find(subset, 'correct_true')) );
+    n_incorr = numel( intersect(ind, find(subset, 'correct_false')) );
+    
+    n_total = n_corr + n_incorr;
+    
+    p_corr = n_corr / n_total;
+    
+    dat = [ dat; p_corr ];
+  end
+  
+  append( plabs, y );
+end
+
+delay_strs = combs( plabs, 'gcue_delay' );
+stop_inds = cellfun( @(x) strfind(x, '-'), delay_strs );
+
+delays = arrayfun( @(x, y) str2double(x{1}(numel('grouped_delay__')+1:y-1)), delay_strs, stop_inds );
+[~, sorted_ind] = sort( delays );
+
+pl = plotlabeled();
+to_plt = labeled( dat, plabs );
+
+pl.group_order = delay_strs( sorted_ind );
+pl.error_func = @plotlabeled.sem;
+pl.one_legend = true;
+
+bar( pl, to_plt, 'trial_type', 'gcue_delay', 'drug' );
+
+fname = joincat( prune(to_plt'), {'trial_type', 'drug', 'correct'} );
+
 
 %%  rt, per cue delay
 
@@ -97,16 +170,25 @@ ind = intersect( find(summary.data > 0), find(summary, {'no_errors', 'wrong_go_n
 
 rt = prune( summary(ind) );
 
-rt = eachindex( rt', {'date', 'cue_delay', 'trial_outcome'}, @rownanmean );
+collapsecat( rt, 'cue_delay' );
+only( rt, 'ro1' );
 
-delay_strs = rt('cue_delay');
-delays = shared_utils.container.cat_parse_double( 'delay__', delay_strs );
-[~, sort_i] = sort( delays );
+rt = eachindex( rt', {'date', 'gcue_delay', 'trial_outcome'}, @rownanmean );
+
+% delay_strs = rt('cue_delay');
+% delays = shared_utils.container.cat_parse_double( 'delay__', delay_strs );
+% [~, sort_i] = sort( delays );
+
+delay_strs = combs( rt, 'gcue_delay' );
+stop_inds = cellfun( @(x) strfind(x, '-'), delay_strs );
+
+delays = arrayfun( @(x, y) str2double(x{1}(numel('grouped_delay__')+1:y-1)), delay_strs, stop_inds );
+[~, sorted_ind] = sort( delays );
 
 pl = plotlabeled();
 pl.error_func = @plotlabeled.sem;
-pl.group_order = delay_strs(sort_i);
-pl.bar( rt, 'drug', 'cue_delay', 'trial_outcome' );
+pl.group_order = delay_strs(sorted_ind);
+pl.bar( rt, 'drug', 'gcue_delay', 'trial_outcome' );
 
 fname = strjoin( incat(rt, {'date', 'drug'}), '_' );
 fname = sprintf( 'rt_%s', fname );
@@ -172,30 +254,45 @@ htp_devs = std( serotonin_data );
 
 %%  broken cues 
 
+do_save = true;
+
 labels = getlabels( summary );
 
-[y, I] = keepeach( labels', {'date', 'trial_type', 'cue_delay'} );
+prune( only(labels, 'ro1') );
+
+[y, I] = keepeach( labels', {'date', 'trial_type', 'gcue_delay'} );
 data = zeros( size(y, 1), 1 );
 
 for i = 1:numel(I)
   initiated_ind = intersect( I{i}, find(labels, 'initiated_true') );
-  broke_fix_ind = intersect( I{i}, find(labels, 'broke_cue_fixation') );
+  broke_cue_fix_ind = intersect( I{i}, find(labels, 'broke_cue_fixation') );
   
-  data(i) = numel(broke_fix_ind) / numel(initiated_ind);
+  did_not_break_ind = setdiff( I{i}, find(labels, 'no_fixation') );
+  
+%   data(i) = numel(broke_cue_fix_ind) / numel(initiated_ind);
+  data(i) = numel(broke_cue_fix_ind) / numel(did_not_break_ind);
 end
 
 p_broke_cue = labeled( data, y );
 
+delay_strs = combs( p_broke_cue, 'gcue_delay' );
+stop_inds = cellfun( @(x) strfind(x, '-'), delay_strs );
+
+delays = arrayfun( @(x, y) str2double(x{1}(numel('grouped_delay__')+1:y-1)), delay_strs, stop_inds );
+[~, sorted_ind] = sort( delays );
+
 pl = plotlabeled();
 pl.error_func = @plotlabeled.sem;
-pl.panel_order = 'delay__0.01';
+pl.panel_order = delay_strs(sorted_ind);
 
-pl.bar( p_broke_cue, 'drug', 'trial_type', 'cue_delay' );
+pl.bar( p_broke_cue, 'drug', 'trial_type', 'gcue_delay' );
 
 fname = strjoin( incat(p_broke_cue, {'drug', 'trial_type', 'cue_delay'}), '_' );
 fname = sprintf( 'p_broke_cue_fix_%s', fname );
 
-shared_utils.plot.save_fig( gcf, fullfile(save_p, fname), {'fig', 'epsc', 'png'}, true );
+if ( do_save )
+  shared_utils.plot.save_fig( gcf, fullfile(save_p, fname), {'fig', 'epsc', 'png'}, true );
+end
 
 %%  broke cue anova
 

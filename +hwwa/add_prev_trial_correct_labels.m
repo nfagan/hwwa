@@ -1,5 +1,7 @@
 function labs = add_prev_trial_correct_labels( labs )
 
+addcat( labs, 'prevcorrect' );
+
 N = size( labs, 1 );
 
 if ( N == 0 )
@@ -27,7 +29,6 @@ for i = 2:N
   end
 end
 
-addcat( labs, 'prevcorrect' );
 setcat( labs, 'prevcorrect', prev_correct );
 
 end
