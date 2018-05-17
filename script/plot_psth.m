@@ -37,6 +37,8 @@ for i = 1:numel(psth_mats)
   end
   
   hwwa.merge_unit_labs( labs_file.labels, psth.labels );
+  hwwa.add_day_labels( labs_file.labels );
+  hwwa.add_data_set_labels( labs_file.labels );
   
   if ( i == 1 )
     psth_labs = labs_file.labels;
