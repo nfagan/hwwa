@@ -28,6 +28,69 @@ save_p = fullfile( conf.PATHS.data_root, 'plots', 'behavior', date_dir );
 shared_utils.io.require_dir( save_p );
 shared_utils.io.require_dir( stats_p );
 
+%%  p correct, saline and 5-htp
+
+do_save = true;
+
+pcorr = prune( only(summary', {'5-htp', 'saline'}) );
+setlabels( pcorr, hwwa.add_day_labels(getlabels(pcorr)) );
+prune( only(pcorr, {'050918', '051418', '051118', '050818', '051018'}) );
+
+labs = getlabels( pcorr );
+
+I = findall( labs, 'date' );
+
+dat = [];
+plabs = fcat();
+
+for i = 1:numel(I)
+  
+  subset = labs(I{i});
+  
+  only( subset, 'initiated_true' );
+  
+  [y, corr_i] = keepeach( subset', {'trial_type'} );
+  
+  for j = 1:numel(corr_i)
+    
+    ind = corr_i{j};
+    
+    n_corr = numel( intersect(ind, find(subset, 'correct_true')) );
+    n_incorr = numel( intersect(ind, find(subset, 'correct_false')) );
+    
+    n_total = n_corr + n_incorr;
+    
+    p_corr = n_corr / n_total;
+    
+    dat = [ dat; p_corr ];
+  end
+  
+  append( plabs, y );
+end
+
+colors = containers.Map();
+colors('050818') = 'r';
+colors('050918') = 'c';
+colors('051018') = 'b';
+colors('051118') = 'g';
+colors('051418') = 'k';
+
+pl = plotlabeled();
+to_plt = labeled( dat, plabs );
+pl.add_points = true;
+pl.error_func = @plotlabeled.sem;
+pl.points_are = { 'day' };
+pl.marker_size = 18;
+pl.marker_type = '*';
+pl.points_color_map = colors;
+
+bar( pl, to_plt, 'trial_type', 'drug', 'correct' );
+
+fname = joincat( prune(to_plt'), {'trial_type', 'drug', 'correct'} );
+
+shared_utils.plot.save_fig( gcf(), fullfile(save_p, fname), {'epsc', 'png', 'fig'} );
+
+
 %%  rt, per cue delay
 
 ind = intersect( find(summary.data > 0), find(summary, {'no_errors', 'wrong_go_nogo'}) );
@@ -222,11 +285,18 @@ shared_utils.plot.save_fig( gcf, fullfile(save_p, fname) ...
 
 specificity = { 'date', 'trial_type' };
 
-all_labs = getlabels( summary );
-[labs, I, C] = keepeach( getlabels(summary), specificity );
+to_dprime = setlabels( summary', hwwa.add_day_labels(getlabels(summary)) );
+
+to_keep = find( ~trueat(to_dprime, find(to_dprime, 'no drug')) );
+keep( to_dprime, to_keep );
+
+prune( only(to_dprime, {'050918', '051418', '051118', '050818', '051018'}) );
+
+all_labs = getlabels( to_dprime );
+[labs, I, C] = keepeach( getlabels(to_dprime), specificity );
 data = zeros( numel(I), 1 );
-correct_trials = find( summary, 'no_errors' );
-initiated_trials = find( summary, {'no_errors', 'wrong_go_nogo'} );
+correct_trials = find( to_dprime, 'no_errors' );
+initiated_trials = find( to_dprime, {'no_errors', 'wrong_go_nogo'} );
 for i = 1:numel(I)
   n_correct = numel( intersect(I{i}, correct_trials) );
   n_init = numel( intersect(I{i}, initiated_trials) );
@@ -278,7 +348,7 @@ end
 
 %%
 
-plot_type = 'b';
+plot_type = 'd_prime';
 
 switch ( plot_type )
   case 'd_prime'

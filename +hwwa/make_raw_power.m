@@ -6,6 +6,7 @@ defaults.f1 = 2.5;
 defaults.f2 = 250;
 defaults.n = 2;
 defaults.filter = true;
+defaults.subtract_reference = true;
 
 params = hwwa.parsestruct( defaults, varargin );
 
@@ -38,6 +39,16 @@ parfor i = 1:numel(mats)
     
     psth = lfp.psth( evts{j} );
     
+    addcat( psth.labels, 'unified_filename' );
+    setcat( psth.labels, 'unified_filename', lfp.unified_filename );
+    hwwa.add_region_labels( psth.labels, 'FP' );
+    
+    if ( params.subtract_reference )
+      [data, labs] = ref_subtract( psth.data, psth.labels );
+      psth.data = data;
+      psth.labels = labs;
+    end
+    
     I = findall( psth.labels, 'id' );
     
     all_chans = [];
@@ -63,6 +74,25 @@ parfor i = 1:numel(mats)
   fprintf( '\n Saving ... ' );
   hwwa.psave( output_filename, lfp, 'power', '-v7.3' );
   fprintf( 'Done.' );
+end
+
+end
+
+function [data, labs] = ref_subtract( data, labs )
+
+ref_ind = find( labs, 'ref' );
+
+if ( isempty(ref_ind) )
+  return;
+end
+
+ref_data = data(ref_ind, :);
+
+I = findall( labs, 'channel' );
+
+for i = 1:numel(I)
+  subset_data = data(I{i}, :);
+  data(I{i}, :) = subset_data - ref_data;
 end
 
 end

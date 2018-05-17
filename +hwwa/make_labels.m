@@ -66,8 +66,10 @@ for i = 1:numel(mats)
   %
   
   hwwa.add_correct_labels( f );
+  hwwa.add_prev_trial_correct_labels( f );
   hwwa.add_initiated_labels( f );
   hwwa.add_drug_labels( f );
+  hwwa.add_trial_type_change_labels( f );
   
   labels = struct();
   labels.labels = f;
