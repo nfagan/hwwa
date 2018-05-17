@@ -24,15 +24,15 @@ ms_firings_p = fullfile( ms_p, 'firings' );
 params_fullfile = fullfile( ms_p, 'params', 'params.json' );
 ms_runall_fullfile = fullfile( ms_script_p, 'runall.sh' );
 
+files_containing = params.files_containing;
+
+reg_filenames = containing( shared_utils.io.find(raw_p, '.regions'), files_containing );
+
+cellfun( @shared_utils.io.require_dir, {ms_raw_p, ms_script_p, ms_firings_p} );
+
 ms_runall_fid = fopen( ms_runall_fullfile, 'wt' );
-
+  
 try
-  files_containing = params.files_containing;
-
-  reg_filenames = containing( shared_utils.io.find(raw_p, '.regions'), files_containing );
-
-  cellfun( @shared_utils.io.require_dir, {ms_raw_p, ms_script_p, ms_firings_p} );
-
   for i = 1:numel(reg_filenames)
     hwwa.progress( i, numel(reg_filenames), mfilename );
 
@@ -54,10 +54,13 @@ try
 
       chans = ensure_cell( channel2str('WB', json_channels2num(region_map.(region))) );
 
-      ms_file = sprintf( '%s_%s.mda', id, region );
+      ms_id = sprintf( '%s_%s', id, region );
+      ms_file = sprintf( '%s.mda', ms_id );
+      ms_script_file = sprintf( '%s.sh', ms_id );
+      
       ms_raw_fullfile = fullfile( ms_raw_p, ms_file );
       ms_firings_fullfile = fullfile( ms_firings_p, ms_file );
-      ms_script_fullfile = fullfile( ms_script_p, ms_file );
+      ms_script_fullfile = fullfile( ms_script_p, ms_script_file );
 
       ms_run.make_mda_file( pl2_fullfile, chans, ms_raw_fullfile );
 
