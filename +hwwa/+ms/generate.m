@@ -65,11 +65,8 @@ try
       ms_firings_fullfile = fullfile( ms_firings_p, ms_file );
       ms_script_fullfile = fullfile( ms_script_p, ms_script_file );
       ms_meta_fullfile = fullfile( ms_meta_p, ms_meta_file );
-      
-%       x = PL2Ad( pl2_fullfile, 'WB09' );
-%       t = (0:numel(x.Values)-1) * (1/x.ADFreq);
 
-      t = ms_run.make_mda_file( pl2_fullfile, chans, ms_raw_fullfile );
+      ms_run.make_mda_file( pl2_fullfile, chans, ms_raw_fullfile );
 
       sort_cmd = ms_run.get_sort_command( pipeline_fullfile ...
         , ms_raw_fullfile, ms_firings_fullfile, params_fullfile );
@@ -87,7 +84,6 @@ try
       meta_data.channel_strs = chans;
       meta_data.channels = chan_ns;
       meta_data.ms_filename = ms_file;
-      meta_data.time = t;
       
       save( ms_meta_fullfile, 'meta_data' );
     end
