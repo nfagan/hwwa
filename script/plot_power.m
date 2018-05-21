@@ -5,9 +5,9 @@ power_p = hwwa.get_intermediate_dir( 'raw_power' );
 
 power_mats = hwwa.require_intermediate_mats( power_p );
 
-evt = 'go_target_onset';
+% evt = 'go_target_onset';
 % evt = 'go_target_acquired';
-% evt = 'go_nogo_cue_onset';
+evt = 'go_nogo_cue_onset';
 % evt = 'reward_onset';
 % evt = 'go_target_offset';
 
@@ -35,6 +35,7 @@ for i = 1:numel(power_mats)
   psth_d = measure.data;
   
   hwwa.merge_unit_labs( labs_file.labels, measure.labels );
+  hwwa.add_broke_cue_labels( labs_file.labels );
   
   if ( do_z )
     psth_d = hwwa.zscore( psth_d, labs_file.labels, z_within );
@@ -57,16 +58,10 @@ for i = 1:numel(power_mats)
   t = measure.time;
 end
 
-did_break_ind = find( psth_labs, 'broke_cue_fixation' );
-did_not_break = setdiff( 1:size(psth_labs, 1), did_break_ind );
-
-addcat( psth_labs, 'broke_cue' );
-setcat( psth_labs, 'broke_cue', 'broke_true', did_break_ind );
-setcat( psth_labs, 'broke_cue', 'broke_false', did_not_break );
-
 prune( psth_labs );
 
-save_p = fullfile( conf.PATHS.data_root, 'plots', 'raw_power', datestr(now, 'mmddyy'), evt );
+save_p = fullfile( conf.PATHS.data_root, 'plots', 'raw_power' ...
+  , datestr(now, 'mmddyy'), evt );
 
 %%
 
@@ -80,9 +75,9 @@ cont.step_size = measure.step_size * 1e3;
 
 %%  correct - incorrect
 
-do_save = false;
+do_save = true;
 
-figure(2);
+figure(1);
 
 specificity = { 'trial_type', 'trial_outcome', 'drug', 'region', 'type_changed' };
 

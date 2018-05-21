@@ -6,12 +6,26 @@ defaults.look_back = -0.5;  % s
 defaults.look_ahead = 0.5;
 defaults.window_size = 0;
 defaults.event = '';
-
-event_p = hwwa.get_intermediate_dir( 'plex_events' );
-lfp_p = hwwa.get_intermediate_dir( 'lfp' );
-output_p = hwwa.get_intermediate_dir( 'aligned_lfp' );
+defaults.kind = 'fp';
 
 params = hwwa.parsestruct( defaults, varargin );
+
+kind = params.kind;
+
+switch ( kind )
+  case 'fp'
+    lfp_dir = 'lfp';
+    aligned_dir = 'aligned_lfp';
+  case 'wb'
+    lfp_dir = 'wb';
+    aligned_dir = 'aligned_wb';
+  otherwise
+    error( 'Unrecognized kind "%s".', kind );
+end
+
+event_p = hwwa.get_intermediate_dir( 'plex_events' );
+lfp_p = hwwa.get_intermediate_dir( lfp_dir );
+output_p = hwwa.get_intermediate_dir( aligned_dir );
 
 if ( isempty(params.event) )
   error( 'Specify an event name.' );

@@ -10,7 +10,7 @@ for i = 1:numel(I)
   means = nanmean( subset_data, 1 );
   devs = nanstd( subset_data, [], 1 );
   
-  data(I{i}, colons{:}) = (subset_data - means) ./ devs;  
+  data(I{i}, colons{:}) = (subset_data - means) ./ devs;
 end
 
 end

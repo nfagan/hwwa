@@ -18,6 +18,16 @@ post_baseline = 0;
 % norm_func = @minus;
 norm_func = @rdivide;
 
+delays = 0.1:0.01:0.5;
+n_delays = 3;
+[g_starts, g_stops] = hwwa.bin_delays( delays, n_delays );
+
+do_z = true;
+z_within = { 'id' };
+
+psth_data = [];
+psth_labs = fcat();
+
 for i = 1:numel(psth_mats)
   hwwa.progress( i, numel(psth_mats) );
   
@@ -27,6 +37,10 @@ for i = 1:numel(psth_mats)
   
   psth = psth_file.psth(evt);
   psth_d = psth.data;
+  
+  if ( do_z )
+    psth_d = hwwa.zscore( psth_d, psth.labels, z_within );
+  end
   
   if ( do_norm )
     baseline_psth = psth_file.psth(baseline_evt);
@@ -39,24 +53,14 @@ for i = 1:numel(psth_mats)
   hwwa.merge_unit_labs( labs_file.labels, psth.labels );
   hwwa.add_day_labels( labs_file.labels );
   hwwa.add_data_set_labels( labs_file.labels );
+  hwwa.add_broke_cue_labels( labs_file.labels );
+  hwwa.add_group_delay_labels( labs_file.labels, g_starts, g_stops );
   
-  if ( i == 1 )
-    psth_labs = labs_file.labels;
-    psth_data = psth_d;
-  else
-    append( psth_labs, labs_file.labels );
-    psth_data = [ psth_data; psth_d ];
-  end
+  psth_data = [ psth_data; psth_d ];
+  append( psth_labs, labs_file.labels );
   
   t = psth.time;
 end
-
-did_break_ind = find( psth_labs, 'broke_cue_fixation' );
-did_not_break = setdiff( 1:size(psth_labs, 1), did_break_ind );
-
-addcat( psth_labs, 'broke_cue' );
-setcat( psth_labs, 'broke_cue', 'broke_true', did_break_ind );
-setcat( psth_labs, 'broke_cue', 'broke_false', did_not_break );
 
 prune( psth_labs );
 
@@ -75,14 +79,18 @@ pl.add_smoothing = true;
 pl.add_errors = true;
 pl.one_legend = true;
 pl.x = t;
+% pl.group_order = { 'grouped_delay__0.1-0.22', 'grouped_delay__0.23-0.35' };
 
 % panels_are = { 'id', 'trial_type' };
 % lines_are = { 'trial_outcome' };
 % lines_are = { 'broke_cue' };
 % panels_are = { 'id' };
 
-panels_are = { 'id', 'drug' };
+panels_are = { 'id', 'drug', 'trial_type' };
 lines_are = { 'correct' };
+
+% panels_are = { 'id', 'drug', 'trial_type', 'correct' };
+% lines_are = { 'gcue_delay' };
 
 specificity = unique( [lines_are, panels_are, 'id'] );
 
@@ -103,9 +111,13 @@ end
 
 psth_labeled = labeled( plt_data, psth_labs );
 
+prune( only(psth_labeled, {'dlpfc', 'initiated_true'}) );
+
 % only( psth_labeled, {'wrong_go_nogo', 'broke_cue_fixation'} );
 
 % collapsecat( psth_labeled, {'trial_type', 'trial_outcome'} );
+
+collapsecat( psth_labeled, 'id' );
 
 I = findall( psth_labeled, 'id' );
 
@@ -133,6 +145,50 @@ if ( do_save )
 end
 
 end
+
+%%  plot means across time
+
+do_save = false;
+
+t_start = -0.1;
+t_stop = 0.1;
+t_ind = psth_
+
+pl = plotlabeled();
+pl.error_func = @plotlabeled.nansem;
+pl.summary_func = @plotlabeled.nanmean;
+pl.smooth_func = @(x) smooth(x, 7);
+pl.add_smoothing = true;
+pl.add_errors = true;
+pl.one_legend = true;
+pl.x = t;
+pl.group_order = { 'grouped_delay__0.1-0.22', 'grouped_delay__0.23-0.35' };
+
+specificity = unique( [lines_are, panels_are, 'id'] );
+
+plt_data = psth_data;
+
+plt = labeled( plt_data, psth_labs );
+only( plt, 'ro1' );
+only( plt, 'initiated_true' );
+
+collapsecat( plt, 'id' );
+
+figs_are = { 'id' };
+x_are = { 'correct' };
+groups_are = { 'gcue_delay' };
+panels_are = { 'trial_type' };
+
+I = findall( plt, figs_are );
+
+for i = 1:numel(I)
+  
+  subset_plt = plt(I{i});
+  
+  bar( pl, subset_plt, x_are, groups_are, panels_are );
+  
+end
+
 
 %%  plot targ onset
 

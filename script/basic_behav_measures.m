@@ -7,8 +7,15 @@ label_mats = hwwa.require_intermediate_mats( [], labels_p, [] );
 
 summary = labeled();
 
-g_starts = [0.1, 0.2, 0.3, 0.4];
-g_stops = [0.19, 0.29, 0.39, 0.5];
+delays = 0.1:0.01:0.5;
+n_delays = 3;
+[g_starts, g_stops] = hwwa.bin_delays( delays, n_delays );
+
+% g_starts = delay_starts;
+% g_stops = delay_stops;
+
+g_starts = [ 0.1, 0.2, 0.3, 0.4 ];
+g_stops = [0.19, 0.29, 0.39, 0.5 ];
 
 for i = 1:numel(label_mats)
   hwwa.progress( i, numel(label_mats), mfilename );
@@ -41,11 +48,9 @@ shared_utils.io.require_dir( stats_p );
 
 %%  p correct, saline and 5-htp
 
-do_save = true;
+do_save = false;
 
-pcorr = prune( only(summary', {'5-htp', 'saline'}) );
-setlabels( pcorr, hwwa.add_day_labels(getlabels(pcorr)) );
-prune( only(pcorr, {'050918', '051418', '051118', '050818', '051018'}) );
+pcorr = prune( only(summary', 'ro1') );
 
 labs = getlabels( pcorr );
 
@@ -380,20 +385,31 @@ shared_utils.plot.save_fig( gcf, fullfile(save_p, fname) ...
 
 %%  d'
 
-specificity = { 'date', 'trial_type' };
+do_save = true;
 
-to_dprime = setlabels( summary', hwwa.add_day_labels(getlabels(summary)) );
+delay_group = 'cue_delay';
+
+specificity = { 'date', 'trial_type', delay_group };
+
+to_dprime = summary';
 
 to_keep = find( ~trueat(to_dprime, find(to_dprime, 'no drug')) );
 keep( to_dprime, to_keep );
 
-prune( only(to_dprime, {'050918', '051418', '051118', '050818', '051018'}) );
+% prune( only(to_dprime, 'ro1') );
+
+ind = find( ~trueat(to_dprime, find(to_dprime, 'ro1')) );
+keep( to_dprime, ind );
+
+% collapsecat( to_dprime, 'drug' );
 
 all_labs = getlabels( to_dprime );
 [labs, I, C] = keepeach( getlabels(to_dprime), specificity );
 data = zeros( numel(I), 1 );
+
 correct_trials = find( to_dprime, 'no_errors' );
-initiated_trials = find( to_dprime, {'no_errors', 'wrong_go_nogo'} );
+initiated_trials = find( to_dprime, 'initiated_true' );
+
 for i = 1:numel(I)
   n_correct = numel( intersect(I{i}, correct_trials) );
   n_init = numel( intersect(I{i}, initiated_trials) );
@@ -445,7 +461,7 @@ end
 
 %%
 
-plot_type = 'd_prime';
+plot_type = 'c';
 
 switch ( plot_type )
   case 'd_prime'
@@ -463,10 +479,15 @@ end
 plt_sdt = labeled( plt_data, d_prime_labs );
 
 pl = plotlabeled();
-pl.error_func = @plotlabeled.std;
+pl.error_func = @plotlabeled.sem;
 pl.one_legend = true;
+% pl.group_order = { 'grouped_delay__0.1-0.22', 'grouped_delay__0.23-0.35' };
+pl.group_order = { 'delay__0.01', 'delay__0.1' };
+pl.x_order = pl.group_order;
+% pl.y_lims = [0.55, 0.82];
 
-pl.bar( plt_sdt, 'drug', 'cue_delay', 'trial_type' );
+% pl.bar( plt_sdt, 'drug', delay_group, 'trial_type' );
+pl.bar( plt_sdt, delay_group, 'drug', 'trial_type' );
 
 means = eachindex( plt_sdt', 'drug', @rowmean );
 devs = each( plt_sdt', 'drug', @(x) std(x, [], 1) );
@@ -481,17 +502,48 @@ sal_mean = mean( saline_data );
 htp_mean = mean( serotonin_data );
 sal_dev = std( saline_data );
 htp_dev = std( serotonin_data );
+%%
+mean_each = 'drug';
+I = findall( d_prime_labs, mean_each );
 
-[~, p, ~, stats] = ttest( saline_data, serotonin_data );
-stats = struct2table( stats );
-stats(:, 'p') = { p };
+for i = 1:numel(I)
+  subset_one_drug = plt_data(I{i});
+  subset_labs = d_prime_labs(I{i});
+  
+  [y, mean_i] = keepeach( subset_labs, delay_group );
+  means = rowop( subset_one_drug, mean_i, @(x) mean(x, 1) );
+  devs = rowop( subset_one_drug, mean_i, @(x) std(x, [], 1) );
+  
+  delays = combs( subset_labs, delay_group );
+  [~, sort_ind] = sort( shared_utils.container.cat_parse_double('delay__', delays) );
+  
+  m = means(sort_ind);
+  n = (1:numel(sort_ind))';
+  eval_n = 1:0.1:numel(sort_ind);
+  
+  p = polyfit( n, m(:), 1 );
+  
+  hold on;
+  plot( eval_n, polyval(p, eval_n) );
+end
+%%
+try
+  [~, p, ~, stats] = ttest( saline_data, serotonin_data );
+  stats = struct2table( stats );
+  stats(:, 'p') = { p };
+catch err
+  warning( err.message );
+end
 
-shared_utils.plot.save_fig( gcf, fullfile(save_p, plot_type), {'fig', 'epsc', 'png'}, true );
+if ( do_save )
 
-writetable( m_t, fullfile(stats_p, ['means_', plot_type, '.csv']), 'WriteRowNames', true );
-writetable( d_t, fullfile(stats_p, ['devs_', plot_type, '.csv']), 'WriteRowNames', true );
-writetable( stats, fullfile(stats_p, ['stats_', plot_type, '.csv']), 'WriteRowNames', true );
+  shared_utils.plot.save_fig( gcf, fullfile(save_p, plot_type), {'fig', 'epsc', 'png'}, true );
 
+  writetable( m_t, fullfile(stats_p, ['means_', plot_type, '.csv']), 'WriteRowNames', true );
+  writetable( d_t, fullfile(stats_p, ['devs_', plot_type, '.csv']), 'WriteRowNames', true );
+  writetable( stats, fullfile(stats_p, ['stats_', plot_type, '.csv']), 'WriteRowNames', true );
+
+end
 
 
 

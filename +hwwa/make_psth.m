@@ -6,12 +6,24 @@ defaults.look_back = -0.5;  % s
 defaults.look_ahead = 0.5;
 defaults.bin_size = 0.01;
 defaults.event = '';
-
-event_p = hwwa.get_intermediate_dir( 'plex_events' );
-spike_p = hwwa.get_intermediate_dir( 'spikes' );
-output_p = hwwa.get_intermediate_dir( 'psth' );
+defaults.kind = 'sua';
 
 params = hwwa.parsestruct( defaults, varargin );
+
+kind = params.kind;
+
+switch ( kind )
+  case 'sua'
+    spike_dir = 'spikes';
+  case 'mua'
+    spike_dir = 'mua_spikes';
+  otherwise
+    error( 'Unrecognized kind "%s".', kind );
+end
+
+event_p = hwwa.get_intermediate_dir( 'plex_events' );
+spike_p = hwwa.get_intermediate_dir( spike_dir );
+output_p = hwwa.get_intermediate_dir( 'psth' );
 
 if ( isempty(params.event) )
   error( 'Specify an event name.' );
@@ -70,7 +82,7 @@ for i = 1:numel(mats)
       
       [one_psth, psth_t] = one_unit( unit, evt_times, look_back(j), look_ahead(j), bin_size );
       
-      unit_labs = get_unit_labels( units(k) );
+      unit_labs = hwwa.get_unit_labels( units(k) );
       
       repmat( unit_labs, numel(evt_times) );
       
@@ -89,22 +101,6 @@ for i = 1:numel(mats)
   shared_utils.io.require_dir( output_p );
   
   hwwa.psave( output_filename, psth, 'psth' );
-end
-
-end
-
-function labs = get_unit_labels(unit)
-
-labs = fcat.with( {'channel', 'id', 'ms_channel', 'region'} );
-setcat( labs, 'channel', unit.channel );
-setcat( labs, 'id', unit.id );
-
-if ( isfield(unit, 'ms_channel') )
-  setcat( labs, 'ms_channel', unit.ms_channel );
-end
-
-if ( isfield(unit, 'region') )
-  setcat( labs, 'region', unit.region );
 end
 
 end

@@ -2,6 +2,7 @@ function make_ms_spikes(varargin)
 
 defaults = hwwa.get_common_make_defaults();
 defaults.sample_rate = 40e3;
+defaults.mua = false;
 
 params = hwwa.parsestruct( defaults, varargin );
 
@@ -39,6 +40,13 @@ for i = 1:numel(mda_files)
   ms_spike_times = firings(2, :);
   ms_unit_ids = firings(3, :);
   
+  if ( params.mua )
+    ms_unit_ids = make_mua( ms_unit_ids, ms_channel_ids );
+    ms_unit_prefix = 'MS-MUA';
+  else
+    ms_unit_prefix = 'MS';
+  end
+  
   unq_channels = unique( ms_channel_ids );
   
   first_unit = true;
@@ -50,7 +58,7 @@ for i = 1:numel(mda_files)
     channel_ind = ms_channel_ids == ms_channel_id;
     
     channel_name = meta_file.channel_strs{ms_channel_id};
-    ms_channel_name = shared_utils.general.channel2str( 'MS', ms_channel_id );
+    ms_channel_name = shared_utils.general.channel2str( ms_unit_prefix, ms_channel_id );
     
     unit_ns = unique( ms_unit_ids(channel_ind) );
     
@@ -100,6 +108,17 @@ for i = 1:numel(K)
   shared_utils.io.require_dir( output_p );
   
   hwwa.psave( output_filename, units, 'units' );
+end
+
+end
+
+function unit_ids = make_mua(unit_ids, channel_ids)
+
+unq_channels = unique( channel_ids );
+
+for i = 1:numel(unq_channels)
+  ind = channel_ids == unq_channels(i);
+  unit_ids(ind) = i;
 end
 
 end

@@ -3,11 +3,25 @@ function make_lfp(varargin)
 conf = hwwa.config.load();
 
 defaults = hwwa.get_common_make_defaults();
+defaults.kind = 'fp';
 
 params = hwwa.parsestruct( defaults, varargin );
 
+kind = params.kind;
+
+switch ( kind )
+  case 'fp'
+    lfp_dir = 'lfp';
+    channel_prefix = 'FP';
+  case 'wb'
+    lfp_dir = 'wb';
+    channel_prefix = 'WB';
+  otherwise
+    error( 'Unrecognized kind "%s".', kind );
+end
+
 unified_p = hwwa.get_intermediate_dir( 'unified' );
-output_p = hwwa.get_intermediate_dir( 'lfp' );
+output_p = hwwa.get_intermediate_dir( lfp_dir );
 
 mats = hwwa.require_intermediate_mats( params.files, unified_p, params.files_containing );
 
@@ -40,7 +54,7 @@ for i = 1:numel(mats)
   active_spk = spike_chans(is_active_spk);
   active_ns = cellfun( @(x) x.Channel, active_spk );
   
-  is_active_func = @(x) any(active_ns == x.Channel) && strcmp(x.SourceName, 'FP');
+  is_active_func = @(x) any(active_ns == x.Channel) && strcmp(x.SourceName, channel_prefix);
   
   is_active_fp = cellfun( is_active_func, analog_chans );
   
@@ -52,6 +66,8 @@ for i = 1:numel(mats)
   lfp.id = cell( size(lfp.channel) );
   
   for j = 1:numel(active_channels)
+    fprintf( '\n\t %d of %d', j, numel(active_channels) );
+    
     channel = active_channels{j};
     
     channel_name = channel.Name;
@@ -76,7 +92,7 @@ for i = 1:numel(mats)
   
   shared_utils.io.require_dir( output_p );
   
-  hwwa.psave( output_filename, lfp, 'lfp' );
+  hwwa.psave( output_filename, lfp, 'lfp', '-v7.3' );
 end
 
 end
