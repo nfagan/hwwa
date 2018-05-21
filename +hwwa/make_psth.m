@@ -41,7 +41,7 @@ assert( numel(event_names) == numel(look_back) && numel(look_back) == numel(look
 
 mats = hwwa.require_intermediate_mats( params.files, spike_p, params.files_containing );
 
-for i = 1:numel(mats)
+parfor i = 1:numel(mats)
   hwwa.progress( i, numel(mats), mfilename );
   
   spikes = shared_utils.io.fload( mats{i} );
@@ -74,10 +74,14 @@ for i = 1:numel(mats)
   units = spikes.units;
   
   for j = 1:numel(event_names)
+    fprintf( '\n\t %d of %d', j, numel(event_names) );
+    
     evt_name = event_names{j};
     evt_times = events.event_times(:, events.event_key(evt_name));
     
     for k = 1:numel(units)
+      fprintf( '\n\t\t %d of %d', k, numel(units) );
+      
       unit = units(k);
       
       [one_psth, psth_t] = one_unit( unit, evt_times, look_back(j), look_ahead(j), bin_size );

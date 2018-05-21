@@ -5,9 +5,9 @@ psth_p = hwwa.get_intermediate_dir( 'psth' );
 
 psth_mats = hwwa.require_intermediate_mats( psth_p );
 
-evt = 'go_target_onset';
+% evt = 'go_target_onset';
 % evt = 'go_target_acquired';
-% evt = 'go_nogo_cue_onset';
+evt = 'go_nogo_cue_onset';
 % evt = 'reward_onset';
 % evt = 'go_target_offset';
 
@@ -60,7 +60,10 @@ for i = 1:numel(psth_mats)
   append( psth_labs, labs_file.labels );
   
   t = psth.time;
+  psth_t = t;
 end
+
+hwwa.add_region_labels( psth_labs, 'WB' );
 
 prune( psth_labs );
 
@@ -79,18 +82,21 @@ pl.add_smoothing = true;
 pl.add_errors = true;
 pl.one_legend = true;
 pl.x = t;
-% pl.group_order = { 'grouped_delay__0.1-0.22', 'grouped_delay__0.23-0.35' };
+pl.fig = figure(2);
+pl.group_order = { 'grouped_delay__0.1-0.22', 'grouped_delay__0.23-0.35' };
+pl.panel_order = { 'correct_true' };
 
 % panels_are = { 'id', 'trial_type' };
 % lines_are = { 'trial_outcome' };
 % lines_are = { 'broke_cue' };
 % panels_are = { 'id' };
 
-panels_are = { 'id', 'drug', 'trial_type' };
-lines_are = { 'correct' };
+% panels_are = { 'id', 'drug', 'trial_type', 'region' };
+% lines_are = { 'correct' };
 
-% panels_are = { 'id', 'drug', 'trial_type', 'correct' };
-% lines_are = { 'gcue_delay' };
+panels_are = { 'id', 'drug', 'trial_type', 'correct' };
+lines_are = { 'gcue_delay' };
+fnames_are = { 'id', 'date', 'drug' };
 
 specificity = unique( [lines_are, panels_are, 'id'] );
 
@@ -111,15 +117,15 @@ end
 
 psth_labeled = labeled( plt_data, psth_labs );
 
-prune( only(psth_labeled, {'dlpfc', 'initiated_true'}) );
+prune( only(psth_labeled, {'dlpfc', 'initiated_true', 'saline'}) );
 
 % only( psth_labeled, {'wrong_go_nogo', 'broke_cue_fixation'} );
 
 % collapsecat( psth_labeled, {'trial_type', 'trial_outcome'} );
 
-collapsecat( psth_labeled, 'id' );
+collapsecat( psth_labeled, {'id', 'date'} );
 
-I = findall( psth_labeled, 'id' );
+I = findall( psth_labeled, {'id', 'date'} );
 
 for i = 1:numel(I)
 
@@ -135,7 +141,7 @@ arrayfun( @(x) set(x, 'nextplot', 'add'), axs );
 arrayfun( @(x) plot(x, [0; 0], get(x, 'ylim'), 'k--'), axs );
 arrayfun( @(x) xlabel(x, sprintf('Time (s) from %s', strrep(evt, '_', ' '))), axs );
 
-fname = strjoin( incat(plt, specificity), '_' );
+fname = joincat( plt, fnames_are );
 fname = sprintf( 'psth_%s', fname );
 full_fname = fullfile( save_p, fname );
 
@@ -150,9 +156,9 @@ end
 
 do_save = false;
 
-t_start = -0.1;
-t_stop = 0.1;
-t_ind = psth_
+t_start = -0.2;
+t_stop = 0;
+t_ind = psth_t >= t_start & psth_t <= t_stop;
 
 pl = plotlabeled();
 pl.error_func = @plotlabeled.nansem;
@@ -166,13 +172,15 @@ pl.group_order = { 'grouped_delay__0.1-0.22', 'grouped_delay__0.23-0.35' };
 
 specificity = unique( [lines_are, panels_are, 'id'] );
 
-plt_data = psth_data;
+plt_data = nanmean( psth_data(:, t_ind), 2 );
 
 plt = labeled( plt_data, psth_labs );
 only( plt, 'ro1' );
-only( plt, 'initiated_true' );
+only( plt, {'initiated_true', 'dlpfc'} );
 
 collapsecat( plt, 'id' );
+
+prune( plt );
 
 figs_are = { 'id' };
 x_are = { 'correct' };
@@ -186,7 +194,6 @@ for i = 1:numel(I)
   subset_plt = plt(I{i});
   
   bar( pl, subset_plt, x_are, groups_are, panels_are );
-  
 end
 
 
