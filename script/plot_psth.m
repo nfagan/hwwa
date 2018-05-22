@@ -6,8 +6,8 @@ psth_p = hwwa.get_intermediate_dir( 'psth' );
 psth_mats = hwwa.require_intermediate_mats( psth_p );
 
 % evt = 'go_target_onset';
-% evt = 'go_target_acquired';
-evt = 'go_nogo_cue_onset';
+evt = 'go_target_acquired';
+% evt = 'go_nogo_cue_onset';
 % evt = 'reward_onset';
 % evt = 'go_target_offset';
 
@@ -22,7 +22,7 @@ delays = 0.1:0.01:0.5;
 n_delays = 3;
 [g_starts, g_stops] = hwwa.bin_delays( delays, n_delays );
 
-do_z = true;
+do_z = false;
 z_within = { 'id' };
 
 psth_data = [];
@@ -72,12 +72,12 @@ save_p = fullfile( conf.PATHS.data_root, 'plots', 'spike', datestr(now, 'mmddyy'
 %%
 
 do_z = false;
-do_save = true;
+do_save = false;
 
 pl = plotlabeled();
 pl.error_func = @plotlabeled.nansem;
 pl.summary_func = @plotlabeled.nanmean;
-pl.smooth_func = @(x) smooth(x, 7);
+pl.smooth_func = @(x) smooth(x, 10);
 pl.add_smoothing = true;
 pl.add_errors = true;
 pl.one_legend = true;
@@ -91,11 +91,12 @@ pl.panel_order = { 'correct_true' };
 % lines_are = { 'broke_cue' };
 % panels_are = { 'id' };
 
-% panels_are = { 'id', 'drug', 'trial_type', 'region' };
-% lines_are = { 'correct' };
+panels_are = { 'id', 'drug', 'trial_type', 'region' };
+lines_are = { 'correct' };
 
-panels_are = { 'id', 'drug', 'trial_type', 'correct' };
-lines_are = { 'gcue_delay' };
+% panels_are = { 'id', 'drug', 'trial_type', 'correct' };
+% lines_are = { 'gcue_delay' };
+
 fnames_are = { 'id', 'date', 'drug' };
 
 specificity = unique( [lines_are, panels_are, 'id'] );
@@ -117,7 +118,7 @@ end
 
 psth_labeled = labeled( plt_data, psth_labs );
 
-prune( only(psth_labeled, {'dlpfc', 'initiated_true', 'saline'}) );
+prune( only(psth_labeled, {'dlpfc', 'initiated_true'}) );
 
 % only( psth_labeled, {'wrong_go_nogo', 'broke_cue_fixation'} );
 
@@ -156,8 +157,8 @@ end
 
 do_save = false;
 
-t_start = -0.2;
-t_stop = 0;
+t_start = 0;
+t_stop = 0.25;
 t_ind = psth_t >= t_start & psth_t <= t_stop;
 
 pl = plotlabeled();
