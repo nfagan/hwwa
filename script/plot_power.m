@@ -5,9 +5,9 @@ power_p = hwwa.get_intermediate_dir( 'raw_power' );
 
 power_mats = hwwa.require_intermediate_mats( power_p );
 
-% evt = 'go_target_onset';
+evt = 'go_target_onset';
 % evt = 'go_target_acquired';
-evt = 'go_nogo_cue_onset';
+% evt = 'go_nogo_cue_onset';
 % evt = 'reward_onset';
 % evt = 'go_target_offset';
 
@@ -75,7 +75,7 @@ cont.step_size = measure.step_size * 1e3;
 
 %%  correct - incorrect
 
-do_save = true;
+do_save = false;
 
 figure(1);
 
@@ -169,11 +169,14 @@ sub1 = meaned({'go_trial', 'go_choice'}) - meaned({'go_trial', 'nogo_choice'});
 sub2 = meaned({'nogo_trial', 'nogo_choice'}) - meaned({'nogo_trial', 'go_choice'});
 meaned = [ sub1; sub2 ];
 
+% meaned = meaned({'go_trial'}) - meaned({'nogo_trial'});
+% shp = [ 1, 2 ];
+
 meaned = add_field( meaned, 'epochs', strrep(evt, '_', ' ') );
 
 meaned.spectrogram( specificity ...
-  , 'frequencies', [0, 100] ...
-  , 'time', [-500, 0] ...
+  , 'frequencies', [0, 65] ...
+  , 'time', [-250, 500] ...
   , 'shape', [2, 2] ...
   );
 
@@ -182,6 +185,54 @@ if ( do_save )
 
   fname = strjoin( flat_uniques(meaned, {'trial_type', 'trial_outcome'}), '_' );
   full_fname = fullfile( save_p, fname );
+  shared_utils.plot.save_fig( gcf, full_fname, {'epsc', 'png', 'fig'}, true );
+end
+
+%%  lines
+
+specificity = { 'trial_type', 'correct', 'drug', 'region', 'channel', 'date' };
+
+meaned = each1d( subset_cont, specificity, @rowops.nanmean );
+
+meaned = rm( meaned, {'no_choice', 'no drug'} );
+meaned = collapse( meaned, 'error' );
+meaned = only( meaned, 'dlpfc' );
+
+sub1 = meaned({'go_trial', 'go_choice'}) - meaned({'go_trial', 'nogo_choice'});
+sub2 = meaned({'nogo_trial', 'nogo_choice'}) - meaned({'nogo_trial', 'go_choice'});
+meaned = [ sub1; sub2 ];
+
+time_meaned = time_mean( meaned, [-100, 300] );
+
+%%
+
+do_save = true;
+
+pl = ContainerPlotter();
+pl.x = time_meaned.frequencies;
+pl.main_line_width = 1;
+pl.add_ribbon = true;
+pl.params.error_function = @plotlabeled.nansem;
+pl.compare_series = true;
+pl.p_correct_type = 'fdr';
+pl.params.smooth_function = @(x) smooth(x, 5);
+pl.params.add_smoothing = true;
+pl.y_lim = [-0.4, 0.4];
+
+lines_are = { 'drug' };
+panels_are = { 'trial_type' };
+
+axs = pl.plot( time_meaned, lines_are, panels_are );
+
+xlim( axs, [0, 65] );
+
+if ( do_save )
+  full_save_p = fullfile( save_p, 'lines' );
+  
+  shared_utils.io.require_dir( full_save_p );
+
+  fname = strjoin( flat_uniques(time_meaned, {'trial_type', 'trial_outcome'}), '_' );
+  full_fname = fullfile( full_save_p, fname );
   shared_utils.plot.save_fig( gcf, full_fname, {'epsc', 'png', 'fig'}, true );
 end
 
