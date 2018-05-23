@@ -84,6 +84,20 @@ save_p = fullfile( conf.PATHS.data_root, 'plots', 'spike', datestr(now, 'mmddyy'
 
 %%
 
+pfclabs = prune( only(psth_labs', {'ro1', 'dlpfc'}) );
+
+keepeach( pfclabs, 'id' );
+
+[y, I] = keepeach( pfclabs', {'drug', 'region'} );
+
+counts = Container( cellfun(@numel, I), SparseLabels.from_fcat(y) );
+
+table( counts, 'drug', 'region' )
+
+[c, C] = countrows( pfclabs, {'drug', 'region'} );
+
+%%
+
 [y, I] = keepeach( psth_labs', 'id' );
 grand_means = nanmean( rownanmean(psth_data, I), 2 );
 
@@ -98,11 +112,9 @@ pl.x_label = 'Grand mean sp/s';
 
 pl.hist( plt, 20, [], 'drug' );
 
-
-
 %%
 
-do_save = true;
+do_save = false;
 
 pl = plotlabeled();
 pl.error_func = @plotlabeled.nansem;
@@ -137,7 +149,7 @@ psth_labeled = labeled( psth_data, psth_labs );
 
 prune( only(psth_labeled, {'dlpfc', 'initiated_true', 'ro1'}) );
 
-% only( psth_labeled, '0514-WB16-MS08-1' ); % classic dlpfc
+only( psth_labeled, '0514-WB16-MS08-1' ); % classic dlpfc
 % only( psth_labeled, '0510-WB13-MS05-7' ); % go action
 % only( psth_labeled, '0508-WB13-MS05-1' ); % cue response
 % only( psth_labeled, '0510-WB11-MS03-1' ); % poss. nogo
@@ -150,7 +162,7 @@ prune( only(psth_labeled, {'dlpfc', 'initiated_true', 'ro1'}) );
 % only( psth_labeled, '0509-WB15-8' );  % decrease due to go; nogo correct higher than go incorrect
 % only( psth_labeled, '0508-WB15-8' ); % planning for go action
 % only( psth_labeled, '0508-WB15-8' ); % planning for go action
-only( psth_labeled, '0508-WB11-4' ); % correct go (pre-response)
+% only( psth_labeled, '0508-WB11-4' ); % correct go (pre-response)
 
 
 
