@@ -1,9 +1,11 @@
 conf = hwwa.config.load();
 
-unified_p = hwwa.get_intermediate_dir( 'unified' );
-labels_p = hwwa.get_intermediate_dir( 'labels' );
+conf.PATHS.data_root = '/Volumes/My Passport/NICK/Chang Lab 2016/hww_gng/data';
 
-label_mats = hwwa.require_intermediate_mats( [], labels_p, [] );
+unified_p = hwwa.get_intermediate_dir( 'unified', conf );
+labels_p = hwwa.get_intermediate_dir( 'labels', conf );
+
+label_mats = hwwa.require_intermediate_mats( [], labels_p, '10' );
 
 summary = labeled();
 
@@ -46,11 +48,22 @@ save_p = fullfile( conf.PATHS.data_root, 'plots', 'behavior', date_dir );
 shared_utils.io.require_dir( save_p );
 shared_utils.io.require_dir( stats_p );
 
+%%
+
+interleaved_days = { '100118', '100318' };
+across_blocks_days = { '100218', '100418' };
+
+summary_labs = getlabels( summary );
+
+addcat( summary_labs, 'delay_manipulation' );
+setcat( summary_labs, 'delay_manipulation', 'interleaved', find(summary_labs, interleaved_days) );
+setcat( summary_labs, 'delay_manipulation', 'across_blocks', find(summary_labs, across_blocks_days) );
+
 %%  p correct, saline and 5-htp
 
 do_save = false;
 
-pcorr = prune( only(summary', 'ro1') );
+pcorr = prune( only(summary', 'tarantino_delay_check') );
 
 labs = getlabels( pcorr );
 

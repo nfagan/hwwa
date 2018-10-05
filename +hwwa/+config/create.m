@@ -24,7 +24,7 @@ PATHS.repositories = '';
 
 %   DEPENDENCIES
 DEPENDS = struct();
-DEPENDS.repositories = { 'shared_utils', 'eyelink', 'plexon', 'spike_helpers', 'ms_run' };
+DEPENDS.repositories = { 'shared_utils', 'eyelink', 'plexon', 'spike_helpers', 'ms_run', 'dsp3' };
 DEPENDS.others = { '' };
 
 %   PLEX

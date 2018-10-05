@@ -1,11 +1,12 @@
 function make_labels(varargin)
 
 defaults = hwwa.get_common_make_defaults();
-
-input_p = hwwa.get_intermediate_dir( 'unified' );
-output_p = hwwa.get_intermediate_dir( 'labels' );
-
 params = hwwa.parsestruct( defaults, varargin );
+
+conf = params.config;
+
+input_p = hwwa.get_intermediate_dir( 'unified', conf );
+output_p = hwwa.get_intermediate_dir( 'labels', conf );
 
 mats = hwwa.require_intermediate_mats( params.files, input_p, params.files_containing );
 
