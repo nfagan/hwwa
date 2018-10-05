@@ -2,13 +2,14 @@ function make_unified(varargin)
 
 defaults = hwwa.get_common_make_defaults();
 
+params = hwwa.parsestruct( defaults, varargin );
+
+conf = params.config;
+
 raw_subdir = 'raw_redux';
 
-conf = hwwa.config.load();
 input_p = fullfile( conf.PATHS.data_root, raw_subdir );
-output_p = hwwa.get_intermediate_dir( 'unified' );
-
-params = hwwa.parsestruct( defaults, varargin );
+output_p = hwwa.get_intermediate_dir( 'unified', conf );
 
 mats = hwwa.require_intermediate_mats( params.files, input_p, params.files_containing );
 

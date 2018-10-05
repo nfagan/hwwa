@@ -1,14 +1,13 @@
 function make_edfs(varargin)
 
-conf = hwwa.config.load();
-data_p = conf.PATHS.data_root;
-
 defaults = hwwa.get_common_make_defaults();
-
-input_p = hwwa.get_intermediate_dir( 'unified' );
-output_p = hwwa.get_intermediate_dir( 'edf' );
-
 params = hwwa.parsestruct( defaults, varargin );
+
+conf = params.config;
+
+input_p = hwwa.get_intermediate_dir( 'unified', conf );
+output_p = hwwa.get_intermediate_dir( 'edf', conf );
+data_p = conf.PATHS.data_root;
 
 mats = hwwa.require_intermediate_mats( params.files, input_p, params.files_containing );
 

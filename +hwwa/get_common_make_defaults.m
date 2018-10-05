@@ -11,5 +11,6 @@ defaults.files_containing = [];
 defaults.overwrite = false;
 defaults.append = true;
 defaults.save = true;
+defaults.config = hwwa.config.load();
 
 end

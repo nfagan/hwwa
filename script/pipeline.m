@@ -1,6 +1,9 @@
 %%  pipeline
 
-inputs = { 'overwrite', true, 'files_containing', '05' };
+conf = hwwa.config.load();
+conf.PATHS.data_root = '/Volumes/My Passport/NICK/Chang Lab 2016/hww_gng/data';
+
+inputs = { 'overwrite', false, 'files_containing', [], 'config', conf };
 
 %%  save unified trial data
 
