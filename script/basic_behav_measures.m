@@ -5,7 +5,7 @@ conf.PATHS.data_root = '/Volumes/My Passport/NICK/Chang Lab 2016/hww_gng/data';
 unified_p = hwwa.get_intermediate_dir( 'unified', conf );
 labels_p = hwwa.get_intermediate_dir( 'labels', conf );
 
-label_mats = hwwa.require_intermediate_mats( [], labels_p, '10' );
+label_mats = hwwa.require_intermediate_mats( [], labels_p, [] );
 
 summary = labeled();
 
@@ -272,11 +272,12 @@ htp_devs = std( serotonin_data );
 
 %%  broken cues 
 
-do_save = true;
+do_save = false;
 
 labels = getlabels( summary );
 
-prune( only(labels, 'ro1') );
+% prune( only(labels, 'ro1') );
+prune( only(labels, hwwa_get_cron_days()) );
 
 [y, I] = keepeach( labels', {'date', 'trial_type', 'gcue_delay'} );
 data = zeros( size(y, 1), 1 );
@@ -294,16 +295,18 @@ end
 p_broke_cue = labeled( data, y );
 
 delay_strs = combs( p_broke_cue, 'gcue_delay' );
-stop_inds = cellfun( @(x) strfind(x, '-'), delay_strs );
+% stop_inds = cellfun( @(x) strfind(x, '-'), delay_strs );
 
-delays = arrayfun( @(x, y) str2double(x{1}(numel('grouped_delay__')+1:y-1)), delay_strs, stop_inds );
-[~, sorted_ind] = sort( delays );
+if ( false )
+  delays = arrayfun( @(x, y) str2double(x{1}(numel('grouped_delay__')+1:y-1)), delay_strs, stop_inds );
+  [~, sorted_ind] = sort( delays );
+end
 
-pl = plotlabeled();
+pl = plotlabeled.make_common();
 pl.error_func = @plotlabeled.sem;
-pl.panel_order = delay_strs(sorted_ind);
+% pl.panel_order = delay_strs(sorted_ind);
 
-pl.bar( p_broke_cue, 'drug', 'trial_type', 'gcue_delay' );
+pl.bar( p_broke_cue, 'cue_delay', 'drug', 'trial_type' );
 
 fname = strjoin( incat(p_broke_cue, {'drug', 'trial_type', 'cue_delay'}), '_' );
 fname = sprintf( 'p_broke_cue_fix_%s', fname );

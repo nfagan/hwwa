@@ -6,8 +6,10 @@ defaults = hwwa.get_common_make_defaults();
 
 params = hwwa.parsestruct( defaults, varargin );
 
-unified_p = hwwa.get_intermediate_dir( 'unified' );
-output_p = hwwa.get_intermediate_dir( 'sync' );
+conf = params.config;
+
+unified_p = hwwa.get_intermediate_dir( 'unified', conf );
+output_p = hwwa.get_intermediate_dir( 'sync', conf );
 
 sync_channel = conf.PLEX.sync_channel;
 

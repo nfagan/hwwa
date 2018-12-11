@@ -5,7 +5,7 @@ conf.PATHS.data_root = '/Volumes/My Passport/NICK/Chang Lab 2016/hww_gng/data';
 unified_p = hwwa.get_intermediate_dir( 'unified', conf );
 labels_p = hwwa.get_intermediate_dir( 'labels', conf );
 
-label_mats = hwwa.require_intermediate_mats( [], labels_p, '10' );
+label_mats = hwwa.require_intermediate_mats( [], labels_p, [] );
 
 summary = labeled();
 
@@ -30,6 +30,7 @@ for i = 1:numel(label_mats)
   hwwa.add_day_labels( labs );
   hwwa.add_group_delay_labels( labs, g_starts, g_stops );
   hwwa.add_data_set_labels( labs );
+  hwwa.add_drug_labels( labs );
   
   prune( labs );
   
@@ -63,14 +64,105 @@ assert_ispair( summary_dat, summary_labs );
 
 prune( summary_labs );
 
+%%  rt
+
+do_save = false;
+
+uselabs = summary_labs';
+usedat = summary_dat;
+
+assert_ispair( usedat, uselabs );
+
+mask = fcat.mask( uselabs ...
+  , @find, {'tarantino_drug_check', 'initiated_true', 'go_trial', 'correct_true'} ...
+  , @find, hwwa_get_first_days() ...
+);
+
+pl = plotlabeled.make_common();
+
+pl.panel_order = { 'saline' };
+
+pl.add_points = true;
+pl.points_are = 'day';
+pl.marker_size = 8;
+pl.marker_type = '*';
+
+xcats = { 'trial_type' };
+gcats = { 'cue_delay' };
+pcats = { 'drug' };
+
+spec = unique( cshorzcat(xcats, gcats, pcats, {'day'}) );
+
+[rtlabs, I] = keepeach( uselabs', spec, mask );
+rtdat = rownanmean( usedat, I );
+
+pl.bar( rtdat, rtlabs, xcats, gcats, pcats );
+
+% pl.bar( usedat(mask), uselabs(mask), xcats, gcats, pcats );
+
+if ( do_save )
+%   dsp3.req_savefig( gcf, plot_p, uselabs(mask), cshorzcat(pcats), 'rt' );
+  dsp3.req_savefig( gcf, plot_p, rtlabs, cshorzcat(pcats), 'rt' );
+end
+
+%%  n initiated
+
+do_save = false;
+
+uselabs = summary_labs';
+
+mask = fcat.mask( uselabs ...
+  , @find, {'tarantino_drug_check', 'initiated_true'} ...
+  , @find, hwwa_get_first_days() ...
+);
+
+[init_labs, I] = keepeach( uselabs', {'date'}, mask );
+init_dat = rowzeros( numel(I) );
+
+for i = 1:numel(I)
+  init_dat(i) = count( uselabs, 'initiated_true', I{i} );
+end
+
+pl = plotlabeled.make_common();
+
+pl.add_points = true;
+pl.points_are = 'day';
+pl.marker_size = 8;
+pl.marker_type = '*';
+pl.panel_order = { 'saline' };
+
+fcats = {};
+xcats = { 'drug' };
+gcats = { 'correct', 'cue_delay' };
+pcats = { 'delay_manipulation' };
+
+[fs, axs, I] = pl.figures( @bar, init_dat, init_labs, fcats, xcats, gcats, pcats );
+shared_utils.plot.match_ylims( axs );
+shared_utils.plot.fullscreen( fs );
+
+% pl.bar( pcorr_dat, pcorr_labs, xcats, gcats, pcats );
+
+if ( do_save )
+  for i = 1:numel(fs)
+    dsp3.req_savefig( fs(i), plot_p, pcorr_labs(I{i}), cshorzcat(pcats, fcats), 'n_initiated' );
+  end
+end
+
 %%  p correct
 %
 % by day, across days
 
+do_save = true;
+
 uselabs = summary_labs';
 
-mask = fcat.mask( uselabs, @find ...
-  , {'tarantino_delay_check', 'initiated_true', 'interleaved', 'across_blocks'} );
+% mask = fcat.mask( uselabs, @find ...
+%   , {'tarantino_delay_check', 'initiated_true', 'interleaved', 'across_blocks'} );
+
+mask = fcat.mask( uselabs ...
+  , @find, {'tarantino_drug_check', 'initiated_true'} ...
+  , @find, hwwa_get_first_days() ...
+);
 
 [pcorr_labs, I] = keepeach( uselabs', {'date', 'trial_type', 'cue_delay'}, mask );
 pcorr_dat = rowzeros( numel(I) );
@@ -83,23 +175,50 @@ for i = 1:numel(I)
 end
 
 pl = plotlabeled.make_common();
+pl.fig = figure(2);
 
-xcats = { 'trial_type' };
-gcats = { 'correct', 'cue_delay' };
-pcats = { 'delay_manipulation' };
+pl.add_points = true;
+pl.points_are = 'day';
+pl.marker_size = 8;
+pl.marker_type = '*';
+pl.group_order = { 'saline' };
 
-pl.bar( pcorr_dat, pcorr_labs, xcats, gcats, pcats );
+fcats = {};
+% xcats = { 'trial_type' };
+% gcats = { 'correct', 'cue_delay' };
+% pcats = { 'delay_manipulation', 'drug' };
 
-dsp3.req_savefig( gcf, plot_p, pcorr_labs', cshorzcat(xcats, gcats, pcats), 'percent_correct' );
+xcats = { 'cue_delay' };
+gcats = { 'drug' };
+pcats = { 'trial_type', 'correct' };
+
+[fs, axs, I] = pl.figures( @bar, pcorr_dat, pcorr_labs, fcats, xcats, gcats, pcats );
+shared_utils.plot.match_ylims( axs );
+shared_utils.plot.fullscreen( fs );
+
+% pl.bar( pcorr_dat, pcorr_labs, xcats, gcats, pcats );
+
+if ( do_save )
+  for i = 1:numel(fs)
+    dsp3.req_savefig( fs(i), plot_p, pcorr_labs(I{i}), cshorzcat(pcats, fcats), 'percent_correct' );
+  end
+end
 
 %%  broken cues 
 %
 % by day, across days
 
-uselabs = summary_labs';
+do_save = true;
+prefix = 'tarantino';
 
-mask = fcat.mask( uselabs, @find ...
-  , {'tarantino_delay_check', 'interleaved', 'across_blocks'} );
+% uselabs = summary_labs';
+
+% mask = fcat.mask( uselabs, @find ...
+%   , {'tarantino_delay_check', 'interleaved', 'across_blocks'} );
+
+mask = fcat.mask( uselabs ...
+  , @find, hwwa_get_first_days() ...
+);
 
 [broke_labs, I] = keepeach( uselabs', {'date', 'trial_type', 'cue_delay'}, mask );
 
@@ -114,13 +233,28 @@ end
 
 pl = plotlabeled.make_common();
 
-xcats = { 'trial_type' };
-gcats = { 'correct', 'cue_delay' };
-pcats = { 'delay_manipulation' };
+pl.add_points = true;
+pl.points_are = 'day';
+pl.marker_size = 8;
+pl.marker_type = '*';
+pl.group_order = { 'saline' };
+pl.y_lims = [0, 1];
+
+% xcats = { 'trial_type' };
+% gcats = { 'correct', 'cue_delay' };
+% pcats = { 'drug' };
+
+xcats = { 'cue_delay' };
+gcats = { 'drug' };
+pcats = { 'trial_type', 'correct' };
 
 pl.bar( broke_ind, broke_labs, xcats, gcats, pcats );
 
-dsp3.req_savefig( gcf, plot_p, broke_labs', cshorzcat(xcats, gcats, pcats), 'abort_rate' );
+shared_utils.plot.fullscreen( gcf );
+
+if ( do_save )
+  dsp3.req_savefig( gcf, plot_p, broke_labs', cshorzcat(pcats), sprintf('%s_abort_rate', prefix) );
+end
 
 %%  d' / criterion
 
@@ -133,8 +267,13 @@ usedat = summary_dat;
 
 assert_ispair( usedat, uselabs );
 
-mask = fcat.mask( uselabs, @find ...
-  , {'tarantino_delay_check', 'interleaved', 'across_blocks'} );
+% mask = fcat.mask( uselabs, @find ...
+%   , {'tarantino_delay_check', 'interleaved', 'across_blocks'} );
+
+mask = fcat.mask( uselabs ...
+  , @find, {'tarantino_drug_check'} ...
+  , @find, hwwa_get_first_days() ...
+);
 
 [pcorr_labs, I] = keepeach( uselabs', specificity, mask );
 data = zeros( numel(I), 1 );
@@ -186,7 +325,9 @@ end
 
 %%
 
-kind = 'criterion';
+kind = 'd_prime';
+
+do_save = true;
 
 switch ( kind )
   case 'd_prime'
@@ -201,12 +342,22 @@ pltlabs = d_prime_labs';
 
 pl = plotlabeled.make_common();
 
+pl.add_points = true;
+pl.points_are = 'day';
+pl.marker_size = 8;
+pl.marker_type = '*';
+pl.panel_order = { 'saline' };
+
 xcats = { 'trial_type' };
-gcats = { 'correct', 'cue_delay' };
-pcats = { 'delay_manipulation' };
+gcats = { 'correct' };
+pcats = { 'delay_manipulation', 'drug' };
 
 pl.bar( pltdat, pltlabs, xcats, gcats, pcats );
 
-dsp3.req_savefig( gcf, plot_p, pltlabs', cshorzcat(xcats, gcats, pcats), kind );
+shared_utils.plot.fullscreen( gcf );
+
+if ( do_save )
+  dsp3.req_savefig( gcf, plot_p, pltlabs', cshorzcat(pcats, gcats), kind );
+end
 
 

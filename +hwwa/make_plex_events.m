@@ -2,11 +2,13 @@ function make_plex_events(varargin)
 
 defaults = hwwa.get_common_make_defaults();
 
-event_p = hwwa.get_intermediate_dir( 'events' );
-sync_p = hwwa.get_intermediate_dir( 'sync' );
-output_p = hwwa.get_intermediate_dir( 'plex_events' );
-
 params = hwwa.parsestruct( defaults, varargin );
+
+conf = params.config;
+
+event_p = hwwa.get_intermediate_dir( 'events', conf );
+sync_p = hwwa.get_intermediate_dir( 'sync', conf );
+output_p = hwwa.get_intermediate_dir( 'plex_events', conf );
 
 mats = hwwa.require_intermediate_mats( params.files, sync_p, params.files_containing );
 

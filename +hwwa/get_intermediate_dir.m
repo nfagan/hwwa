@@ -1,6 +1,6 @@
 function p = get_intermediate_dir(kind, conf)
 
-%   GET_INTERMEDIATE_DIR
+%   GET_INTERMEDIATE_DIR -- Get the absolute path to an intermediate directory.
 
 if ( nargin < 1 ), kind = ''; end
 if ( nargin < 2 || isempty(conf) )

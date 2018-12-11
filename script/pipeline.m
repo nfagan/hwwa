@@ -3,7 +3,9 @@
 conf = hwwa.config.load();
 conf.PATHS.data_root = '/Volumes/My Passport/NICK/Chang Lab 2016/hww_gng/data';
 
-inputs = { 'overwrite', false, 'files_containing', [], 'config', conf };
+files = { 'test_' };
+
+inputs = { 'overwrite', false, 'files_containing', files, 'config', conf };
 
 %%  save unified trial data
 
@@ -12,6 +14,7 @@ hwwa.make_unified( inputs{:} );
 %%  edf -> mat
 
 hwwa.make_edfs( inputs{:} );
+hwwa.make_alternate_el_events( inputs{:} );
 
 %%  save spikes + lfp as mat files
 
