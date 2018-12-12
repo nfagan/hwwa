@@ -1,36 +1,34 @@
-function unified_file = unified(files, unified_filename, varargin)
+function unified_file = unified(files, unified_filename, conf)
 
 %   UNIFIED -- Create unified file.
 %
 %     file = ... unified(files, unified_filename) creates the unified 
 %     intermediate file from the raw data file contained in `files`, 
 %     assigning that file the char identifier `unified_filename`. `files`
-%     is a struct or containers.Map with an entry for 'raw_redux', the name
+%     is a struct or containers.Map with an entry for 'raw', the name
 %     of the subdirectory in which raw data files were presumed to be saved.
 %
-%     file = ... unified(..., 'name', value) specifies additional
-%     name-value paired options. Relevant parameters include:
-%
-%       - 'raw_subdirectory' (char) -- Gives both the name of the subfolder
-%       of the root data directory in which raw data was saved, and also 
-%       the key of `files` associated with the raw data file. Default is 
-%       'raw_redux'.
+%     file = ... unified( ..., conf ) uses the config file `conf` to get
+%     the name of the subdirectory in which raw-data is stored, instead of
+%     the saved config file. The value of this `raw_subdirectory` field
+%     must be consistent with the entry into the `files` aggregate.
 %
 %     IN:
 %       - `files` (containers.Map, struct)
 %       - `unified_filename` (char)
-%       - `input_p` (char) |OPTIONAL|
-%       - `varargin` ('name', value)
+%       - `conf` (struct) |OPTIONAL|
 %     FILES:
 %       - <raw>
 %     OUT:
 %       - `unified_file` (struct)
 
-defaults = hwwa.make.defaults.unified();
-params = hwwa.parsestruct( defaults, varargin );
+if ( nargin < 3 || isempty(conf) )
+  conf = hwwa.config.load();
+else
+  hwwa.util.assertions.assert__is_config( conf );
+end
 
-raw_subdir = params.raw_subdirectory;
-conf = params.config;
+raw_subdir = conf.PATHS.raw_subdirectory;
 
 % Ensure file associated with `raw_subdir` is present.
 hwwa.validatefiles( files, raw_subdir );

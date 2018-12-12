@@ -1,5 +1,9 @@
 function [results, params] = make_events(varargin)
 
+%   MAKE_EVENTS -- Make multiple event intermediate files.
+%
+%     See also hwwa.make.events, hwwa.get_common_make_defaults
+
 defaults = hwwa.get_common_make_defaults();
 
 inputs = 'unified';

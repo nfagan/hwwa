@@ -27,6 +27,8 @@ function x = load_one_intermediate(kind, name_or_conf, conf)
 %     % look for a file called test.mat
 %     events_file2 = hwwa.load_one_intermediate( 'events', 'test.mat' );
 %
+%     See also hwwa.get_intermediate_dir
+%
 %     IN:
 %       - `kind` (char)
 %       - `name_or_conf` (char, struct)

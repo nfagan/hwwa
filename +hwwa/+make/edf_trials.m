@@ -34,8 +34,8 @@ function trials_file = edf_trials(files, varargin)
 %
 %     EXAMPLE //
 %
-%     edf_file = hwwa.load_one_intermediate( 'edf' );
-%     events_file = hwwa.load_one_intermediate( 'el_events', edf_file.unified_filename );
+%     edf_file = hwwa.load1( 'edf' );
+%     events_file = hwwa.load1( 'el_events', edf_file.unified_filename );
 %     % Create the file aggregate.
 %     files = struct( 'edf', edf_file, 'el_events', events_file );
 %     event_name = 'go_target_onset';

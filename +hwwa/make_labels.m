@@ -1,5 +1,9 @@
 function [results, params] = make_labels(varargin)
 
+%   MAKE_LABELS -- Make multiple intermediate label files.
+%
+%     See also hwwa.make.labels, hwwa.get_common_make_defaults
+
 defaults = hwwa.get_common_make_defaults();
 
 inputs = 'unified';

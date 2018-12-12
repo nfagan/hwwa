@@ -1,5 +1,9 @@
 function [results, params] = make_edfs(varargin)
 
+%   MAKE_EDFS -- Make multiple edf intermediate files.
+%
+%     See also hwwa.make.edfs, hwwa.get_common_make_defaults
+
 defaults = hwwa.get_common_make_defaults();
 
 inputs = 'unified';

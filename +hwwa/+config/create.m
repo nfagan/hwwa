@@ -17,14 +17,18 @@ conf = struct();
 %   ID
 conf.(const.config_id) = true;
 
+project_dir = hwwa.util.get_project_folder();
+
 %   PATHS
 PATHS = struct();
-PATHS.data_root = '';
-PATHS.repositories = '';
+PATHS.data_root = fullfile( project_dir, 'data' );
+PATHS.repositories = fileparts( project_dir );
+PATHS.raw_subdirectory = 'raw';
 
 %   DEPENDENCIES
 DEPENDS = struct();
-DEPENDS.repositories = { 'shared_utils', 'eyelink', 'plexon', 'spike_helpers', 'ms_run', 'dsp3' };
+DEPENDS.repositories = { 'shared_utils', 'eyelink', 'plexon' ...
+  , 'spike_helpers', 'ms_run', 'dsp3', 'categorical/api/matlab' };
 DEPENDS.others = { '' };
 
 %   PLEX

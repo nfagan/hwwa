@@ -14,6 +14,11 @@ function [params, loop_runner] = get_params_and_loop_runner(inputs, output, defa
 
 params = hwwa.parsestruct( defaults, args );
 
+if ( isfield(params, 'loop_runner') && hwwa.is_valid_loop_runner(params.loop_runner) )
+  loop_runner = params.loop_runner;
+  return
+end
+
 conf = params.config;
 
 loop_runner = hwwa.get_looped_make_runner( params );
