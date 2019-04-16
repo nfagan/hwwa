@@ -24,6 +24,7 @@ defaults.log_level = 'info';
 defaults.is_parallel = true;
 defaults.keep_output = false;
 defaults.error_handler = 'default';
+defaults.skip_existing = false;
 defaults.config = hwwa.config.load();
 
 end

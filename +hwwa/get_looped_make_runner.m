@@ -64,4 +64,10 @@ if ( ~strcmp(params.error_handler, 'default') )
   obj.set_error_handler( params.error_handler );
 end
 
+% Optionally avoid processing file identifiers that are already present
+% in the object's output directory.
+if ( params.skip_existing )
+  obj.set_skip_existing_files();
+end
+
 end

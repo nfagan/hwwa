@@ -12,6 +12,9 @@ output = 'edf';
 [params, loop_runner] = hwwa.get_params_and_loop_runner( inputs, output, defaults, varargin );
 loop_runner.func_name = mfilename;
 
+% Save as -v7.3
+loop_runner.save_func = @(pathstr, var) save( pathstr, 'var', '-v7.3' );
+
 results = loop_runner.run( @hwwa.make.edfs, params.config );
 
 end

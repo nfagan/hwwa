@@ -29,6 +29,7 @@ unified_filename = hwwa.try_get_unified_filename( unified_file );
 
 reprocess_fields = { 'cue_delay', 'trial_number', 'trial_outcome', 'trial_type' };
 ignore_fields = [ {'reaction_time', 'events', 'target_displacement', 'reward'}, reprocess_fields ];
+ignore_fields{end+1} = 'reward_size_cue_file';
 
 data = unified_file.DATA;
 
@@ -42,7 +43,14 @@ f = addcat( fcat(), [use_fields(:)', reprocess_fields] );
 
 for j = 1:numel(use_fields)
   field = use_fields{j};
-  setcat( f, field, {data(:).(field)} );
+  
+  values = { data.(field) };
+  
+  if ( strcmp(field, 'target_type') )
+    values(strcmp(values, 'social')) = { 'social_target' };
+  end
+  
+  setcat( f, field, values );
 end
 
 setcat( f, 'cue_delay', str_delays );
