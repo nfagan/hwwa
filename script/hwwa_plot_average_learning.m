@@ -6,6 +6,7 @@ defaults.do_save = false;
 defaults.base_subdir = '';
 defaults.base_prefix = '';
 defaults.is_per_monkey = false;
+defaults.is_per_drug = false;
 defaults.is_rt = false;
 
 params = hwwa.parsestruct( defaults, varargin );
@@ -62,6 +63,10 @@ mask = fcat.mask( labels ...
   , @find, {'pilot_social', 'initiated_true', 'no_errors', 'wrong_go_nogo'} ...
   , @findnot, {'tar', '011619'} ...
 );
+
+if ( params.is_per_drug )
+  pcats{end+1} = 'drug';
+end
 
 spec = { 'date', 'trial_type', 'target_image_category' };
 

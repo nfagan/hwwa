@@ -8,7 +8,10 @@ inputs.config.PATHS.raw_subdirectory = 'raw_redux';
 % use_files = {'08-', '09-' };
 % use_files = { '29-J', '30-J', '31-J', '01-F' };
 % use_files = { '24-F', '25-F', '26-F', '27-F' };
-use_files = { '18-M', '19-M', '20-M', '21-M', '22-M' };
+% use_files = { '18-M', '19-M', '20-M', '21-M', '22-M' };
+
+file_nums = [6, 7, 9, 10, 11, 12, 13, 14, 15];
+use_files = arrayfun( @(x) sprintf('%02d-M', x), file_nums, 'un', 0 );
 
 inputs.files_containing = use_files;
 inputs.skip_existing = true;
@@ -21,6 +24,8 @@ hwwa.make_events( inputs );
 hwwa.make_el_events( inputs );
 hwwa.make_alternate_el_events( inputs );
 hwwa.make_labels( inputs );
+hwwa.make_trial_data( inputs );
+hwwa.make_meta( inputs );
 
 %%
 

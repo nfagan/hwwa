@@ -30,26 +30,6 @@ end
 
 end
 
-function match_categories(outputs)
-
-cats = containers.Map();
-
-for i = 1:numel(outputs)
-  c = getcats( outputs(i).labels );
-  
-  for j = 1:numel(c)
-    cats(c{j}) = 1;
-  end
-end
-
-cats = keys( cats );
-
-for i = 1:numel(outputs)
-  addcat( outputs(i).labels, cats );
-end
-
-end
-
 function out = main(files, params)
 
 trial_data_file = shared_utils.general.get( files, 'trial_data' );
@@ -83,5 +63,25 @@ prune( labs );
 out = struct();
 out.rt = rt;
 out.labels = labs;
+
+end
+
+function match_categories(outputs)
+
+cats = containers.Map();
+
+for i = 1:numel(outputs)
+  c = getcats( outputs(i).labels );
+  
+  for j = 1:numel(c)
+    cats(c{j}) = 1;
+  end
+end
+
+cats = keys( cats );
+
+for i = 1:numel(outputs)
+  addcat( outputs(i).labels, cats );
+end
 
 end

@@ -6,8 +6,8 @@ if ( ~hascat(labs, category) )
   return
 end
 
-mispellings = { 'appetative', 'scambled' };
-correct_spellings = { 'appetitive', 'scrambled' };
+mispellings = { 'appetative', 'scambled', 'lip_smack' };
+correct_spellings = { 'appetitive', 'scrambled', 'appetitive' };
 
 assert( numel(mispellings) == numel(correct_spellings) );
 

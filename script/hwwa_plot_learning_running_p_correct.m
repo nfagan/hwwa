@@ -7,6 +7,8 @@ defaults.trial_step_size = 1;
 defaults.use_cumulative = true;
 defaults.is_per_image_category = true;
 defaults.is_per_monkey = true;
+defaults.is_per_drug = false;
+defaults.is_per_day = true;
 defaults.base_subdir = '';
 defaults.base_prefix = '';
 defaults.do_save = false;
@@ -37,14 +39,25 @@ else
   );
 end
 
-pcorr_spec = { 'trial_type', 'date' };
+if ( params.is_per_day )
+  pcorr_spec = { 'trial_type', 'date' };
+else
+  pcorr_spec = { 'trial_type', 'day' };
+  collapsecat( labels, 'date' );
+end
 
 if ( params.is_per_image_category )
   pcorr_spec{end+1} = 'target_image_category';
 end
 
 if ( params.combine_days )  
-  [labels, combined_I] = combine_days( labels, 'monkey', mask );
+  combine_each = { 'monkey' };
+  
+  if ( params.is_per_drug )
+    combine_each{end+1} = 'drug';
+  end
+  
+  [labels, combined_I] = combine_days( labels, combine_each, mask );
   
   mask = rowmask( labels );
   
@@ -177,6 +190,14 @@ if ( ~params.is_per_monkey )
   collapsecat( pcorr_labs, 'monkey' );
 end
 
+if ( params.is_per_drug )
+  pcats{end+1} = 'drug';
+end
+
+if ( ~params.is_per_day )
+  pcats = setdiff( pcats, {'day'} );
+end
+
 [figs, axs, I] = pl.figures( @bar, aucs, pcorr_labs, fcats, xcats, gcats, pcats );
 
 shared_utils.plot.match_ylims( axs );
@@ -212,6 +233,16 @@ end
 
 if ( ~params.is_per_monkey )
   collapsecat( pcorr_labs, 'monkey' );
+end
+
+if ( params.is_per_drug )
+  fcats{end+1} = 'drug';
+  pcats{end+1} = 'drug';
+end
+
+if ( ~params.is_per_day )
+  fcats = setdiff( fcats, 'day' );
+  pcats = setdiff( pcats, 'day' );
 end
 
 pl = plotlabeled.make_common();
