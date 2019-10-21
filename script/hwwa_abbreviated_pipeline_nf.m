@@ -10,10 +10,10 @@ inputs.config.PATHS.raw_subdirectory = 'raw_redux';
 % use_files = { '24-F', '25-F', '26-F', '27-F' };
 % use_files = { '18-M', '19-M', '20-M', '21-M', '22-M' };
 
-file_nums = [6, 7, 9, 10, 11, 12, 13, 14, 15];
-use_files = arrayfun( @(x) sprintf('%02d-M', x), file_nums, 'un', 0 );
+% file_nums = [8, 10, 11, 12, 15, 16, 17, 18, 22, 23, 24, 25];
+% use_files = arrayfun( @(x) sprintf('%02d-A', x), file_nums, 'un', 0 );
 
-inputs.files_containing = use_files;
+% inputs.files_containing = use_files;
 inputs.skip_existing = true;
 
 %%

@@ -1,8 +1,10 @@
-function decompose_social_scrambled(labs)
+function labs = decompose_social_scrambled(labs)
 
 image_categories = combs( labs, 'target_image_category' );
 
-addsetcat( labs, 'scrambled_type', 'not-scrambled' );
+if ( ~isempty(labs) )
+  addsetcat( labs, 'scrambled_type', 'not-scrambled' );
+end
 
 for i = 1:numel(image_categories)
   image_category = image_categories{i};

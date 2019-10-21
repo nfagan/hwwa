@@ -1,4 +1,4 @@
-function hwwa_run_plot_drug_behav(varargin)
+function hwwa_run_plot_approach_avoid_behav(varargin)
 
 provided_data = false;
 
@@ -9,8 +9,6 @@ if ( nargin >= 1 && ~ischar(varargin{1}) && ~isempty(varargin{1}) )
 end
 
 defaults = hwwa.get_common_plot_defaults( hwwa.get_common_make_defaults() );
-defaults.norm_func = 'no_norm';
-defaults.collapse_scrambled_image_category = false;
 
 params = hwwa.parsestruct( defaults, varargin );
 
@@ -24,7 +22,7 @@ if ( ~provided_data )
   );
 end
 
-hwwa_plot_drug_behav( behav_outputs.rt, behav_outputs.labels', params );
+hwwa_plot_approach_avoid_behav( behav_outputs.rt, behav_outputs.labels', params );
 
 end
 

@@ -1,17 +1,36 @@
 function hwwa_plot_drug_behav(rt, labels, varargin)
 
 defaults = hwwa.get_common_plot_defaults( hwwa.get_common_make_defaults() );
+defaults.norm_func = @no_norm;
+defaults.collapse_scrambled_image_category = false;
+
 params = hwwa.parsestruct( defaults, varargin );
 
+hwwa.decompose_social_scrambled( labels );
+
+if ( params.collapse_scrambled_image_category )
+  collapse_scrambled_image_category( labels );
+end
+
 [rt, labels] = ensure_correct_subset( rt, labels' );
+handle_label_repeats( labels );
+hwwa.label_prev_correct( labels );
 
 % Plot overall bars
 run_plot_bar_percent_correct( rt, labels, params );
 run_plot_bar_rt( rt, labels, params );
 
 % Plot lines for each day
-run_plot_percent_correct_per_day( rt, labels, params );
-run_plot_rt_per_day( rt, labels, params );
+% run_plot_percent_correct_per_day( rt, labels, params );
+% run_plot_rt_per_day( rt, labels, params );
+
+end
+
+function collapse_scrambled_image_category(labels)
+
+scrambled_ind = find( labels, 'scrambled' );
+setcat( labels, 'target_image_category', 'scrambled-image', scrambled_ind );
+collapsecat( labels, 'scrambled_type' );
 
 end
 
@@ -83,13 +102,7 @@ mask = get_base_mask( labels );
 
 handle_specificity( labels, specificity );
 
-data_each = { 'date', 'target_image_category', 'trial_type' };
-
-is_per_gender = ismember( 'gender', specificity ); 
-
-if ( is_per_gender )
-  data_each{end+1} = 'gender';
-end
+data_each = get_data_each( specificity );
 
 [plt_data, plt_labels] = data_func( data, labels, data_each, mask );
 
@@ -103,7 +116,7 @@ xcats = { 'target_image_category' };
 gcats = { 'day' };
 pcats = { 'drug', 'trial_type', 'monkey', 'trial_type' };
 
-if ( is_per_gender )
+if ( ismember('gender', specificity) )
   xcats{end+1} = 'gender';
 end
 
@@ -122,36 +135,112 @@ end
 
 end
 
-function plot_bar_overall(data, labels, specificity, measure_type, data_func, params)
-
-mask = get_base_mask( labels );
-
-handle_specificity( labels, specificity );
+function data_each = get_data_each(specificity)
 
 data_each = { 'date', 'target_image_category', 'trial_type' };
 
-is_per_gender = ismember( 'gender', specificity );
+check_additional = { 'gender', 'scrambled_type', 'switch_trial_type', 'switch_target_image_category' };
+use_additional = ismember( check_additional, specificity );
 
-if ( is_per_gender )
-  data_each{end+1} = 'gender';
+data_each = [ data_each, check_additional(use_additional) ];
+
 end
 
+function mask = handle_repeat_label_mask(labels, specificity, mask)
+
+% Only include trials where the preceding trial was correct.
+
+mask = fcat.mask( labels, mask ...
+  , @find, 'prev_correct_true' ...
+);
+
+end
+
+function [data, labels] = no_norm(data, labels, spec)
+end
+
+function [data, labels] = social_minus_scrambled(data, labels, spec)
+
+[data, labels] = dsp3.summary_binary_op( data, labels, spec ...
+  , 'scrambled', 'not-scrambled', @minus, @nanmean );
+
+end
+
+function plot_bar_overall(data, labels, specificity, measure_type, data_func, params)
+%%
+
+mask = get_base_mask( labels );
+mask = handle_repeat_label_mask( labels, specificity, mask );
+
+handle_specificity( labels, specificity );
+norm_spec = csunion( specificity, 'trial_type' );
+
+data_each = get_data_each( specificity );
+
 [plt_data, plt_labels] = data_func( data, labels, data_each, mask );
-hwwa.decompose_social_scrambled( plt_labels );
+[plt_data, plt_labels] = feval( params.norm_func, plt_data, plt_labels, norm_spec );
+% Appetitie - threat
+% [plt_data, plt_labels] = social_minus_scrambled( plt_data, plt_labels ...
+%   , setdiff(data_each, 'scrambled_type') );
 
 pl = plotlabeled.make_common();
+pl.prefer_multiple_groups = true;
+pl.prefer_multiple_xs = true;
 pl.x_tick_rotation = 0;
+pl.panel_order = { 'go_trial', 'nogo_trial' };
+pl.y_lims = [0.3, 1.2];
 
 fig_cats = { 'monkey' };
 xcats = { 'target_image_category' };
 gcats = { 'drug' };
 pcats = { 'scrambled_type', 'trial_type', 'monkey' };
 
-if ( is_per_gender )
+% plt_func = @bar;
+plt_func = @boxplot;
+
+if ( ismember('gender', specificity) )
   xcats{end+1} = 'gender';
 end
 
-[figs, axs, fig_I] = pl.figures( @bar, plt_data, plt_labels, fig_cats, xcats, gcats, pcats );
+if ( ismember(switch_trial_cat, specificity) )  
+  if ( ~ismember('target_image_category', specificity) )
+    xcats = switch_trial_cat;
+    pcats = setdiff( pcats, 'trial_type' );
+    
+  else
+    pcats = setdiff( pcats, {'trial_type', 'scrambled_type'} );
+    pcats{end+1} = switch_trial_cat;
+    gcats{end+1} = 'scrambled_type';
+  end
+  
+  plt_func = @errorbar;
+  
+  plt_data = remove_non_labeled_switch( plt_data, plt_labels, switch_trial_cat );
+  
+elseif ( ismember(switch_image_cat, specificity) )
+  xcats = switch_image_cat;
+  pcats = setdiff( pcats, 'scrambled_type' );
+  
+  plt_data = remove_non_labeled_switch( plt_data, plt_labels, switch_image_cat );
+  
+  plt_func = @errorbar;
+end
+
+if ( isequal(plt_func, @bar) || isequal(plt_func, @errorbar) )
+  [figs, axs, fig_I] = pl.figures( plt_func, plt_data, plt_labels, fig_cats, xcats, gcats, pcats );
+else
+  pl.prefer_multiple_xs = false;
+  pl.prefer_multiple_groups = true;
+  
+  gcats = csunion( gcats, xcats );
+  
+  if ( ismember('scrambled_type', pcats) )
+    pcats = setdiff( pcats, 'scrambled_type' );
+    gcats{end+1} = 'scrambled_type';
+  end
+  
+  [figs, axs, fig_I] = pl.figures( plt_func, plt_data, plt_labels, fig_cats, gcats, pcats );
+end
 
 if ( params.do_save )
   base_p = fullfile( get_base_plot_path(params), measure_type );
@@ -161,6 +250,42 @@ if ( params.do_save )
   
   save_figs( save_p, figs, fig_I, plt_labels, filename_cats );
 end
+
+%%
+
+% factors = { 'target_image_category', 'trial_type', 'scrambled_type' };
+% anova_outs = dsp3.anovan( plt_data, plt_labels', fig_cats, factors ...
+%   , 'include_per_factor_descriptives', true ...
+%   , 'remove_nonsignificant_comparisons', false ...
+% );
+% 
+% a = 'not-scrambled';
+% b = 'scrambled';
+% ranksum_each = { 'trial_type' };
+% 
+% rs_outs = dsp3.ranksum( plt_data, plt_labels', ranksum_each, a, b );
+
+%%
+
+% factors = { 'target_image_category' };
+% anova_outs = dsp3.anovan( plt_data, plt_labels', 'trial_type', factors ...
+%   , 'include_per_factor_descriptives', true ...
+%   , 'remove_nonsignificant_comparisons', false ...
+%   , 'dimension', 1 ...
+% );
+% 
+% a = 'appetitive';
+% b = 'threat';
+% ranksum_each = { 'trial_type' };
+% 
+% rs_outs = dsp3.ranksum( plt_data, plt_labels', ranksum_each, a, b );
+
+end
+
+function [data, labels] = remove_non_labeled_switch(data, labels, switch_cat)
+
+missing_lab = makecollapsed( labels, switch_cat );
+data = indexpair( data, labels, findnone(labels, missing_lab) );
 
 end
 
@@ -175,6 +300,13 @@ use_days = unique( horzcat(days_5htp, days_sal) );
 
 rt = indexpair( rt, labels, findor(labels, use_days) );
 prune( labels );
+
+end
+
+function handle_label_repeats(labels)
+
+hwwa.label_gonogo_switchiness( labels );
+hwwa.label_image_category_switchiness( labels );
 
 end
 
@@ -210,6 +342,20 @@ p = fullfile( hwwa.dataroot(params.config), 'plots', 'behavior' ...
 
 end
 
+function mask = get_ephron_mask(labels)
+
+days = {'041019', '041219', '041619', '041819', '042319', '042519' ...
+  , '040819', '041119', '041519', '041719', '042219', '042419' ...
+  , '042919', '043019', '050219', '050319' ...
+};
+
+mask = fcat.mask( labels ...
+  , @find, days ...
+  , @find, 'ephron' ...
+);
+
+end
+
 function mask = get_base_mask(labels)
 
 mask = fcat.mask( labels ...
@@ -218,6 +364,8 @@ mask = fcat.mask( labels ...
   , @findnone, 'ephron' ...
   , @findnone, '021819' ... % Eliminate first saline day to match N.
 );
+
+mask = union( mask, get_ephron_mask(labels) );
 
 end
 
@@ -238,11 +386,78 @@ end
 
 function specs = get_specificities()
 
+base_spec = get_base_specificities();
+switch_trial_type_spec = get_switch_trial_type_specificities();
+switch_image_cat_spec = get_switch_image_category_specificities();
+
+% specs = [ base_spec, switch_trial_type, switch_image_cat ];
+% specs = [ base_spec, switch_image_cat_spec, switch_trial_type_spec ];
+specs = base_spec;
+
+end
+
+function s = switch_trial_cat
+
+s = 'switch_trial_type';
+
+end
+
+function s = switch_image_cat
+
+s = 'switch_target_image_category';
+
+end
+
+function specs = get_switch_trial_type_specificities(switch_cat)
+
+switch_cat = switch_trial_cat;
+
 specs = { ...
-    {'target_image_category', 'monkey', 'gender'} ...
-  , {'target_image_category', 'gender'} ...
-  , {'target_image_category', 'monkey'} ...
-  , {'target_image_category'} ...
+    {switch_cat} ...
+  , {switch_cat, 'monkey'} ...
+  , {switch_cat, 'scrambled_type'} ...
+  , {switch_cat, 'target_image_category'} ...
+  , {switch_cat, 'target_image_category', 'scrambled_type'} ...
+  , {switch_cat, 'target_image_category', 'monkey'} ...
+  , {switch_cat, 'target_image_category', 'monkey', 'scrambled_type'} ...
+};
+
+end
+
+function specs = get_switch_image_category_specificities()
+
+switch_cat = switch_image_cat;
+
+specs = { ...
+    {switch_cat} ...
+  , {switch_cat, 'monkey'} ...
+  , {switch_cat, 'scrambled_type'} ...
+  , {switch_cat, 'scrambled_type', 'monkey'} ...
+};
+
+end
+
+function specs = get_base_specificities()
+
+% specs = { ...
+%     {'target_image_category', 'monkey', 'gender'} ...
+%   , {'target_image_category', 'gender'} ...
+%   , {'target_image_category', 'monkey'} ...
+%   , {'target_image_category', 'scrambled_type'} ...
+%   , {'target_image_category', 'scrambled_type', 'monkey'} ...
+%   , {'scrambled_type', 'monkey'} ...
+%   , {'scrambled_type'} ...
+%   , {'target_image_category'} ...
+% };
+
+% specs = { ...
+%     {'target_image_category', 'scrambled_type'} ...
+%   , {'target_image_category', 'scrambled_type', 'monkey'} ...
+%   , {'scrambled_type'} ...
+% };
+
+specs = { ...
+  {'scrambled_type'} ...
 };
 
 end

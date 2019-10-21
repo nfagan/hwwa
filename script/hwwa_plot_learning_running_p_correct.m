@@ -18,6 +18,7 @@ defaults.is_rt = false;
 defaults.rt_func = @default_cumulative_rt_mean_func;
 defaults.line_ylims = [];
 defaults.line_xlims = [];
+defaults.norm_func = @no_norm;
 
 params = hwwa.parsestruct( defaults, varargin );
 
@@ -39,10 +40,10 @@ else
   );
 end
 
-if ( params.is_per_day )
+if ( params.is_per_day || params.combine_days )
   pcorr_spec = { 'trial_type', 'date' };
 else
-  pcorr_spec = { 'trial_type', 'day' };
+  pcorr_spec = { 'trial_type', 'day', 'monkey' };
   collapsecat( labels, 'date' );
 end
 
@@ -88,10 +89,11 @@ end
 
 %%
 
-plot_auc( pcorr_dat, pcorr_labs', plot_p, params );
+% plot_auc( pcorr_dat, pcorr_labs', plot_p, params );
 
 % plot_per_day_lines_go_nogo( pcorr_dat, pcorr_labs', plot_p, params );
 plot_per_day_colored_lines( pcorr_dat, pcorr_labs', plot_p, params );
+plot_per_day_colored_line_deltas( pcorr_dat, pcorr_labs', plot_p, params );
 
 end
 
@@ -138,14 +140,21 @@ end
 
 function [pcorr_dat, pcorr_labs] = scrambled_minus_social(pcorr_dat, pcorr_labs)
 
-%%
+[pcorr_dat, pcorr_labs] = a_minus_b( pcorr_dat, pcorr_labs, 'scrambled', 'not-scrambled' );
+
+end
+
+function [pcorr_dat, pcorr_labs] = social_minus_scrambled(pcorr_dat, pcorr_labs)
+
+[pcorr_dat, pcorr_labs] = a_minus_b( pcorr_dat, pcorr_labs, 'not-scrambled', 'scrambled' );
+
+end
+
+function [pcorr_dat, pcorr_labs] = a_minus_b(pcorr_dat, pcorr_labs, a, b)
 
 spec = { 'date', 'target_image_category', 'trial_type' };
 
-sub_cat = whichcat( pcorr_labs, 'scrambled' );
-
-a = 'scrambled';
-b = 'not-scrambled';
+sub_cat = whichcat( pcorr_labs, a );
 
 [pcorr_dat, pcorr_labs] = dsp3.summary_binary_op( ...
   pcorr_dat, pcorr_labs', spec, a, b, @minus, @(x) nanmean(x, 1) );
@@ -168,7 +177,7 @@ end
 end
 
 function plot_auc(pcorr_dat, pcorr_labs, plot_p, params)
-
+%%
 if ( ~strcmp(params.colored_lines_are, 'day') )
   hwwa.decompose_social_scrambled( pcorr_labs );
 end
@@ -182,9 +191,12 @@ aucs = get_auc( bfw.row_nanmean(pcorr_dat, I) );
 
 if ( strcmp(params.colored_lines_are, 'scrambled_minus_social') )
   [aucs, pcorr_labs] = scrambled_minus_social( aucs, pcorr_labs' );
+elseif ( strcmp(params.colored_lines_are, 'social_minus_scrambled') )
+  [aucs, pcorr_labs] = social_minus_scrambled( aucs, pcorr_labs' );
 end
 
 pl = plotlabeled.make_common();
+pl.panel_order = { '5-htp', 'saline', 'go_trial', 'appetitive' };
 
 if ( ~params.is_per_monkey )
   collapsecat( pcorr_labs, 'monkey' );
@@ -204,10 +216,133 @@ shared_utils.plot.match_ylims( axs );
 
 if ( params.do_save )
   for i = 1:numel(figs)
+    shared_utils.plot.fullscreen( figs(i) );
+    
     dsp3.req_savefig( figs(i), fullfile(plot_p, params.base_subdir), pcorr_labs(I{i}) ...
       , unique(cshorzcat(pcats, fcats)) ...
       , sprintf('auc_%s', params.base_prefix) );
   end
+end
+
+end
+
+function [dat, labels] = no_norm(dat, labels, spec)
+%
+end
+
+function plot_per_day_colored_line_deltas(pcorr_dat, pcorr_labs, plot_p, params)
+
+plot_subdir = fullfile( params.base_subdir, 'deltas' );
+base_prefix = params.base_prefix;
+do_save = params.do_save;
+
+min_y = 0;
+
+if ( ~strcmp(params.colored_lines_are, 'day') )
+  hwwa.decompose_social_scrambled( pcorr_labs );
+end
+
+if ( strcmp(params.colored_lines_are, 'scrambled_minus_social') )
+  [pcorr_dat, pcorr_labs] = scrambled_minus_social( pcorr_dat, pcorr_labs );
+  min_y = -1;
+elseif ( strcmp(params.colored_lines_are, 'social_minus_scrambled') )
+  [pcorr_dat, pcorr_labs] = social_minus_scrambled( pcorr_dat, pcorr_labs );
+  min_y = -1;  
+end
+
+[fcats, gcats, pcats] = get_line_plot_categories( params.colored_lines_are );
+
+if ( ~params.is_per_monkey )
+  collapsecat( pcorr_labs, 'monkey' );
+end
+
+if ( params.is_per_drug )
+%   fcats{end+1} = 'drug';
+  gcats{end+1} = 'drug';
+end
+
+if ( ~params.is_per_day )
+  fcats = setdiff( fcats, 'day' );
+  pcats = setdiff( pcats, 'day' );
+end
+
+pl = plotlabeled.make_common();
+pl.one_legend = false;
+pl.panel_order = { 'appetitive', 'threat', 'scrambled appetitive' };
+pl.summary_func = @(x) nanmedian(x, 1);
+pl.add_x_tick_labels = false;
+
+[pcorr_dat, pcorr_labs] = feval( params.norm_func, pcorr_dat, pcorr_labs, [fcats, gcats, pcats] );
+pcorr_dat = diff( pcorr_dat, 1, 2 );
+
+[figs, axs, I, ax_I] = pl.figures( @lines, pcorr_dat, pcorr_labs, fcats, gcats, pcats );
+
+for i = 1:numel(figs)
+  f_axs = findobj( figs(i), 'type', 'axes' );
+  
+  line_handles = findobj( f_axs, 'type', 'line' );
+  
+%   set_line_colors( line_handles );
+end
+
+if ( do_save )
+  plot_spec = unique( cshorzcat(pcats, fcats) );
+  save_p = fullfile( plot_p, plot_subdir );
+  
+  save_figs( figs, axs, I, ax_I, save_p, pcorr_labs, plot_spec, 'lines', params );
+end
+
+%%
+
+nans = isnan( pcorr_dat );
+first_nans = inf( size(nans, 1), 1 );
+
+for i = 1:size(nans, 1)
+  first_nan = find( nans(i, :), 1 );
+  
+  if ( ~isempty(first_nan) )
+    first_nans(i) = first_nan;
+  end
+end
+
+auc_dat = pcorr_dat(:, 1:min(first_nans)-1);
+auc = get_auc( abs(auc_dat) );
+
+pl = plotlabeled.make_common();
+pl.prefer_multiple_xs = true;
+pl.x_tick_rotation = 0;
+
+bar_xcats = 'target_image_category';
+bar_gcats = setdiff( gcats, bar_xcats );
+bar_pcats = setdiff( pcats, bar_xcats );
+
+[figs, axs, I, ax_I] = pl.figures( @bar, auc, pcorr_labs, fcats, bar_xcats, bar_gcats, bar_pcats );
+
+if ( do_save )
+  plot_spec = unique( cshorzcat(bar_pcats, fcats) );
+  save_p = fullfile( plot_p, plot_subdir );
+  
+  save_figs( figs, axs, I, ax_I, save_p, pcorr_labs, plot_spec, 'auc', params );
+end
+
+end
+
+function save_figs(figs, axs, I, ax_I, plot_p, labs, spec, prefix, params)
+
+shared_utils.plot.match_ylims( axs );
+  
+for i = 1:numel(figs)
+  is_subset_ax = ax_I == i;
+
+  shared_utils.plot.match_xlims( axs(is_subset_ax) );
+
+  if ( ~isempty(params.line_xlims) )
+    shared_utils.plot.set_xlims( axs(is_subset_ax), params.line_xlims );
+  end
+
+  shared_utils.plot.fullscreen( figs(i) );
+
+  dsp3.req_savefig( figs(i), plot_p, labs(I{i}), spec );
 end
 
 end
@@ -227,6 +362,9 @@ end
 if ( strcmp(params.colored_lines_are, 'scrambled_minus_social') )
   [pcorr_dat, pcorr_labs] = scrambled_minus_social( pcorr_dat, pcorr_labs );
   min_y = -1;
+elseif ( strcmp(params.colored_lines_are, 'social_minus_scrambled') )
+  [pcorr_dat, pcorr_labs] = social_minus_scrambled( pcorr_dat, pcorr_labs );
+  min_y = -1;  
 end
 
 [fcats, gcats, pcats] = get_line_plot_categories( params.colored_lines_are );
@@ -236,8 +374,8 @@ if ( ~params.is_per_monkey )
 end
 
 if ( params.is_per_drug )
-  fcats{end+1} = 'drug';
-  pcats{end+1} = 'drug';
+%   fcats{end+1} = 'drug';
+  gcats{end+1} = 'drug';
 end
 
 if ( ~params.is_per_day )
@@ -248,16 +386,18 @@ end
 pl = plotlabeled.make_common();
 pl.one_legend = false;
 pl.panel_order = { 'appetitive', 'threat', 'scrambled appetitive' };
-
-if ( isempty(params.line_ylims) )
-  pl.y_lims = [min_y, 1];
-else
-  pl.y_lims = params.line_ylims;
-end
-
 pl.summary_func = @(x) nanmedian(x, 1);
 pl.add_x_tick_labels = false;
-pl.add_errors = false;
+pl.add_errors = true;
+% pl.x_lims = [ 0, 300 ];
+
+% if ( isempty(params.line_ylims) )
+%   pl.y_lims = [min_y, 1];
+% else
+%   pl.y_lims = params.line_ylims;
+% end
+
+[pcorr_dat, pcorr_labs] = feval( params.norm_func, pcorr_dat, pcorr_labs, [fcats, gcats, pcats] );
 
 [figs, axs, I, ax_I] = pl.figures( @lines, pcorr_dat, pcorr_labs, fcats, gcats, pcats );
 
@@ -266,18 +406,23 @@ for i = 1:numel(figs)
   
   line_handles = findobj( f_axs, 'type', 'line' );
   
-  set_line_colors( line_handles );
+%   set_line_colors( line_handles );
 end
 
 if ( do_save )
+  shared_utils.plot.match_ylims( axs );
+  
   for i = 1:numel(figs)
     is_subset_ax = ax_I == i;
     
     shared_utils.plot.match_xlims( axs(is_subset_ax) );
+%     shared_utils.plot.set_xlims( axs(is_subset_ax), [0, 300] );
     
     if ( ~isempty(params.line_xlims) )
       shared_utils.plot.set_xlims( axs(is_subset_ax), params.line_xlims );
     end
+    
+    shared_utils.plot.fullscreen( figs(i) );
     
     dsp3.req_savefig( figs(i), fullfile(plot_p, plot_subdir), pcorr_labs(I{i}) ...
       , unique(cshorzcat(pcats, fcats)) ...
@@ -307,7 +452,8 @@ end
 n_trials = numel( unique_trials );
 n_dates = numel( unique_dates );
 
-color_funcs = { @cool, @autumn };
+color_funcs = { @cool, @cool };
+% color_funcs = { @autumn, @cool };
 
 if ( n_trials == 0 )
   use_complete_true = true;
@@ -379,19 +525,19 @@ function [fcats, gcats, pcats, xcats] = get_bar_plot_categories(colored_lines_ar
 switch ( colored_lines_are )    
   case 'social_vs_scrambled'
     xcats = { 'target_image_category' };
-    gcats = { 'trial_type' };
-    pcats = { 'monkey', 'day', 'scrambled_type' };
+    gcats = { 'scrambled_type' };
+    pcats = { 'monkey', 'day', 'trial_type' };
     fcats = { 'monkey' };
     
-  case 'scrambled_minus_social'
+  case { 'scrambled_minus_social', 'social_minus_scrambled' }
     xcats = { 'target_image_category' };
-    gcats = { 'trial_type' };
-    pcats = { 'monkey', 'day', 'scrambled_type' }; 
+    gcats = { 'scrambled_type' };
+    pcats = { 'monkey', 'day', 'trial_type' }; 
     fcats = { 'monkey' };
     
   case 'threat_vs_appetitive'
-    xcats = { 'scrambled_type' };
-    gcats = { 'trial_type' };
+    xcats = { 'trial_type' };
+    gcats = { 'scrambled_type' };
     pcats = { 'monkey', 'day', 'target_image_category' }; 
     fcats = { 'monkey' };
     
@@ -414,7 +560,7 @@ switch ( colored_lines_are )
     gcats = { 'target_image_category' };
     pcats = { 'monkey', 'day', 'scrambled_type', 'trial_type' };
     
-  case 'scrambled_minus_social'
+  case {'scrambled_minus_social', 'social_minus_scrambled'}
     gcats = { 'target_image_category' };
     fcats = { 'monkey', 'day' };
     pcats = { 'monkey', 'day', 'scrambled_type', 'trial_type' };    
@@ -425,8 +571,10 @@ switch ( colored_lines_are )
     pcats = { 'monkey', 'day', 'target_image_category', 'trial_type' };
     
   otherwise
-    error( 'Unrecognized line type: "%s".', params.colored_lines_are );
+    error( 'Unrecognized line type: "%s".', colored_lines_are );
 end
+
+% fcats{end+1} = 'drug';
 
 end
 
