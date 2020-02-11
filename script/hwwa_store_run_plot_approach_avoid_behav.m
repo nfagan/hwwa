@@ -9,7 +9,6 @@ saccade_outs = hwwa_saccade_info( go_targ_aligned_outs );
 
 %%  Get nogo rt
 
-% saccade_based_rt = hwwa.saccade_based_response_time( go_targ_aligned_outs, saccade_outs );
 saccade_based_rt = hwwa.saccade_based_reaction_time( go_targ_aligned_outs, saccade_outs );
 target_entry_based_rt = hwwa.target_entry_based_rt( go_targ_aligned_outs );
 
@@ -79,7 +78,8 @@ win_size = 50;
 step_size = 1;
 
 time_window_size = 240;
-time_step_size = 10;
+% time_step_size = 10;
+time_step_size = 20;
 
 time_prop_bin_func = @(data, labels, mask) hwwa.single_percent_correct(labels, mask);
 
@@ -123,12 +123,24 @@ hwwa_plot_sliding_window_behavior( slide_rt, rt_start_times, slide_rt_labels', s
   , 'line_xlims', [0, 3.3e3] ...
 );
 
-%%
+%%  p correct over time
 
 hwwa_plot_time_binned_behavior( time_props, time_prop_edges, time_prop_labels ...
   , 'time_limits', [-inf, 3.5e3] ...
   , 'do_save', true ...
+  , 'per_monkey', false ...
 );
+
+%%  num initiated per session
+
+hwwa_plot_num_initiated_per_session( use_labs' ...
+  , 'per_scrambled_type', false ...
+  , 'do_save', true ...
+);
+
+%%  amp-velocity tradeoff
+
+
 
 %%  rt / velocity
 

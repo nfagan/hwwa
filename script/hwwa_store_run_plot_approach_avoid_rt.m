@@ -1,13 +1,21 @@
 conf = hwwa.config.load();
 behav_outs = hwwa_load_approach_avoid_behavior( 'config', conf );
 
+%%  Distinguish 5-htp days from saline days
+
+behav_mask = hwwa.get_approach_avoid_mask( behav_outs.labels );
+
+day_info = combs( behav_outs.labels, {'drug', 'monkey', 'day'}, behav_mask );
+day_info = sortrows( categorical(day_info)' );
+
+writetable( table(day_info), fullfile(hwwa.tmpdir(conf), 'drug_day_info.csv') );
+
 %%
+
+apply_outlier_labels_to_saccade_info = true;
 
 aligned_outs = hwwa_approach_avoid_fix_on_aligned( 'config', conf );
 go_targ_aligned_outs = hwwa_approach_avoid_go_target_on_aligned( 'config', conf );
-saccade_outs = hwwa_saccade_info( go_targ_aligned_outs );
-
-%%
 
 find_non_outliers = @(labels, varargin) find( labels, 'is_outlier__false', varargin{:} );
 
@@ -23,6 +31,21 @@ in_bounds = hwwa.within_std_threshold( pupil_size, pupil_labels, n_devs, norm_ea
 hwwa.apply_outlier_labels( pupil_labels, in_bounds, 'unified_filename', behav_outs.labels );
 hwwa.apply_outlier_labels( pupil_labels, in_bounds, 'unified_filename', pupil_labels );
 
+if ( apply_outlier_labels_to_saccade_info )
+  hwwa.apply_outlier_labels( pupil_labels, in_bounds, 'unified_filename', go_targ_aligned_outs.labels );
+end
+
+saccade_outs = hwwa_saccade_info( go_targ_aligned_outs );
+
+%%
+
+hwwa_pupil_size_vs_percent_correct( pupil_size, pupil_labels' ...
+  , 'mask_func', @(labels) find_non_outliers(labels, hwwa.get_approach_avoid_mask(labels)) ...
+  , 'do_save', true ...
+  , 'apply_trial_std_threshold', false ...
+  , 'per_monkey', false ...
+);
+
 %%  Get nogo rt
 
 % saccade_based_rt = hwwa.saccade_based_response_time( go_targ_aligned_outs, saccade_outs );
@@ -37,6 +60,62 @@ nogo_selectors = { 'nogo_trial', 'correct_false' };
 
 nogo_ind = find( behav_outs.labels, nogo_selectors );
 go_ind = hwwa.find_correct_go( behav_outs.labels );
+
+%%
+
+do_save = false;
+pca_mask = find_non_outliers( saccade_outs.labels, hwwa.get_approach_avoid_mask(saccade_outs.labels) );
+pca_mask = hwwa.find_correct_go_incorrect_nogo( saccade_outs.labels, pca_mask );
+
+use_reaction_time = saccade_based_rt;
+use_response_time = target_entry_based_rt;
+use_movement_time = target_entry_based_rt - saccade_based_rt;
+
+rt_measures = [ use_reaction_time, use_response_time, use_movement_time ];
+rt_measure_names = { 'reaction_time', 'response_time', 'movement_time' };
+
+% rt_measures = [ use_reaction_time ];
+% rt_measure_names = { 'reaction_time' };
+
+pca_outs = hwwa.saccade_info_pca( saccade_outs, rt_measures, rt_measure_names, {}, pca_mask );
+hwwa.saccade_info_pca_plot( pca_outs, go_targ_aligned_outs.labels, {'drug', 'trial_type'} );
+
+if ( do_save )
+  plot_params = hwwa.get_common_plot_defaults( hwwa.get_common_make_defaults() );
+  plot_params.config = conf;
+  
+  save_p = hwwa.approach_avoid_data_path( plot_params, 'plots', 'pca-rt' );
+  shared_utils.plot.fullscreen( gcf );
+  dsp3.req_savefig( gcf, save_p, go_targ_aligned_outs.labels, {'drug', 'trial_type'} );
+end
+
+%%  saccade amp vs vel
+
+amp_vel = nan( rows(pupil_labels), 2 );
+amp_vel(saccade_outs.aligned_to_saccade_ind, 1) = saccade_outs.saccade_lengths;
+amp_vel(saccade_outs.aligned_to_saccade_ind, 2) = saccade_outs.saccade_peak_velocities;
+use_labels = pupil_labels';  % with outlier labels
+
+hwwa_saccade_amplitude_vs_velocity( amp_vel, use_labels' ...
+  , 'seed', 0 ...
+  , 'test_each', {} ...
+  , 'mean_each', {'date'} ...
+  , 'mask_func', @(labels, mask) find_non_outliers(labels, mask) ...
+  , 'do_save', true ...
+  , 'iters', 1e3 ...
+  , 'marker_size', 8 ...
+);
+
+%%
+
+pca_measure_names = {'saccade_velocities', 'saccade_lengths'};
+pca_measures = hwwa.saccade_to_aligned_measures( saccade_outs ...
+  , pca_measure_names, rows(saccade_based_rt), pca_mask );
+pca_measures(:, end+1) = saccade_based_rt;
+pca_labels = go_targ_aligned_outs.labels';
+pca_column_header = [ pca_measure_names, {'rt'} ];
+
+hwwa.save_tabular_data_labels( '~/Desktop/hwwa/pca_data.mat', pca_measures, pca_column_header, pca_labels );
 
 %%
 
@@ -96,17 +175,19 @@ rt_start_times = behav_outs.run_relative_start_times(rt_inds);
 
 %%  rt / velocity
 
-is_saccade_vel = true;
+is_saccade_vel = false;
 
 if ( is_saccade_vel )
   use_data = nan( rows(pupil_labels), 1 );
   use_data(saccade_outs.aligned_to_saccade_ind) = saccade_outs.saccade_velocities;
   use_labels = pupil_labels';  % with outlier labels
   use_kind = 'saccade_velocity';
+  y_lims = [0.7, 1.7];
 else
   use_data = adjusted_rt;
   use_labels = behav_outs.labels';
   use_kind = rt_kind;
+  y_lims = [0, 0.3];
 end
 
 image_cat_combs = [ false ];
@@ -129,7 +210,7 @@ for i = 1:size(plt_combs, 2)
     , 'per_monkey', per_monkey ...
     , 'per_image_category', per_image_cat ...
     , 'rt_kind', use_kind ...
-    , 'y_lims', [0.7, 1.7] ...
+    , 'y_lims', y_lims ...
   );
 end
 

@@ -51,8 +51,22 @@ parfor i = 1:num_trials
   
   starts = starts(within_thresh);
   stops = stops(within_thresh);
+  peak_velocities = peak_velocity( vx, vy, starts, stops );
   
-  start_stops{i} = [starts(:), stops(:)];
+  start_stops{i} = [starts(:), stops(:), peak_velocities];
+end
+
+end
+
+function peak_vel = peak_velocity(vx, vy, starts, stops)
+
+peak_vel = zeros( numel(starts), 1 );
+
+for i = 1:numel(starts)
+  start = starts(i);
+  stop = stops(i);
+  
+  peak_vel(i) = max( max(vx(start:stop)), max(vy(start:stop)) );
 end
 
 end

@@ -1,6 +1,6 @@
 function [normed, norm_labels] = saline_normalize(data, labels, spec, varargin)
 
-non_drug_spec = setdiff( spec, 'drug' );
+non_drug_spec = cssetdiff( spec, 'drug' );
 non_drug_I = findall_or_one( labels, non_drug_spec, varargin{:} );
 
 normed = [];

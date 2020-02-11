@@ -36,6 +36,7 @@ saccade_stop_points_to_right = collapse_points_to_right( saccade_stop_points );
 outs.saccade_dirs = saccade_dirs;
 outs.saccade_lengths = saccade_lengths;
 outs.saccade_velocities = saccade_lengths * vel_ratio;
+outs.saccade_peak_velocities = start_stops(:, 3);
 outs.saccade_angles = hwwa.saccade_angles( saccade_dirs );
 outs.saccade_angles_to_right = saccade_angles_to_right;
 outs.aligned_to_saccade_ind = aligned_to_saccade_ind;
