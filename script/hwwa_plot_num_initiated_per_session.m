@@ -14,8 +14,8 @@ norm_each = cssetdiff( init_each, 'unified_filename' );
 [num_init, init_labels] = hwwa.num_initiated( labels, init_each, mask );
 [normed_init, norm_labels] = hwwa.saline_normalize( num_init, init_labels, norm_each );
 
-plot_normalized( normed_init, norm_labels, rowmask(norm_labels), params );
 plot_raw( num_init, init_labels, rowmask(init_labels), params );
+plot_normalized( normed_init, norm_labels, rowmask(norm_labels), params );
 
 end
 
@@ -28,7 +28,8 @@ xcats = {};
 
 subdir = 'raw';
 
-bar_plots( data, labels, fcats, xcats, gcats, pcats, mask, subdir, params );
+% bar_plots( data, labels, fcats, xcats, gcats, pcats, mask, subdir, params );
+box_plots( data, labels, fcats, gcats, pcats, mask, subdir, params );
 
 end
 
@@ -41,7 +42,36 @@ xcats = {};
 
 subdir = 'normalized';
 
-bar_plots( data, labels, fcats, xcats, gcats, pcats, mask, subdir, params );
+% bar_plots( data, labels, fcats, xcats, gcats, pcats, mask, subdir, params );
+box_plots( data, labels, fcats, gcats, pcats, mask, subdir, params );
+
+end
+
+function box_plots(data, labels, fcats, gcats, pcats, mask, subdir, params)
+
+fig_I = findall_or_one( labels, fcats, mask );
+
+for i = 1:numel(fig_I)
+  fig = gcf();
+  clf( fig );
+  
+  subset = data(fig_I{i});
+  subset_labels = prune( labels(fig_I{i}) );
+  
+  pl = plotlabeled.make_common();
+  pl.add_points = true;
+  pl.points_are = { 'monkey' };
+  pl.marker_size = 2;
+  
+  stats_each = [ fcats, gcats, pcats ];
+  
+  [axs, components] = pl.boxplot( subset, subset_labels, gcats, pcats );
+  maybe_save_fig( fig, subset_labels, stats_each, subdir, params );
+  
+  sr_outs = dsp3.signrank1( subset, subset_labels', stats_each ...
+    , 'signrank_inputs', {1} ...
+  );
+end
 
 end
 

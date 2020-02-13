@@ -135,10 +135,26 @@ hwwa_plot_time_binned_behavior( time_props, time_prop_edges, time_prop_labels ..
 
 hwwa_plot_num_initiated_per_session( use_labs' ...
   , 'per_scrambled_type', false ...
-  , 'do_save', true ...
+  , 'do_save', false ...
 );
 
 %%  amp-velocity tradeoff
+
+vel = nan( rows(use_labs), 1 );
+amp = nan( size(vel) );
+
+to_sacc_ind = saccade_outs.aligned_to_saccade_ind;
+
+vel(to_sacc_ind) = saccade_outs.saccade_peak_velocities;
+amp(to_sacc_ind) = saccade_outs.saccade_lengths;
+
+hwwa_plot_amp_vel_tradeoff( amp, vel, use_labs' ...
+  , 'mask_func', find_non_outliers ...
+  , 'per_monkey', true ...
+  , 'do_save', true ...
+);
+
+%%  saccade landing point
 
 
 
