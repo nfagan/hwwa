@@ -23,6 +23,9 @@ if ( isempty(outputs) )
   outs.pupil = [];
   outs.rois = struct();
   outs.roi_indices = [];
+  outs.sample_relative_events = [];
+  outs.event_key = {};
+  outs.time = [];
 else
   outs = shared_utils.struct.soa( outputs ); 
   outs.roi_indices = make_roi_indices( outputs );
@@ -116,8 +119,21 @@ for i = 1:numel(use_fields)
   out.(use_fields{i}) = aligned_samples;
 end
 
+sample_relative_events = sample_relative_event_indices( events_file.event_times, starts );
+
 out.labels = make_labels( labels_file, meta_file );
 out.rois = roi_file;
+out.sample_relative_events = sample_relative_events;
+out.event_key = { events_file.event_key };
+out.time = params.look_back:params.look_ahead;
+
+end
+
+function events = sample_relative_event_indices(events, starts)
+
+for i = 1:size(events, 2)
+  events(:, i) = round( events(:, i) - starts ) + 1;
+end
 
 end
 

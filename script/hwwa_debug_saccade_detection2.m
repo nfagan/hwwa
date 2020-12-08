@@ -21,6 +21,10 @@ rects = hwwa.proportional_rois( roi_info.rects );
 roi_labels = fcat.from( roi_info );
 rects = hwwa.add_full_image_proportional_roi( rects, roi_labels );
 
+[new_rects, new_labs] = hwwa.add_top_bottom_half_face_rois( rects, roi_labels );
+roi_labels = [ roi_labels'; new_labs ];
+rects = [ rects; new_rects ];
+
 [ib, labels] = hwwa.points_in_roi_bounds( saccade_outs.saccade_stop_points ...
   , saccade_rois, saccade_outs.labels, rects, roi_labels );
 
@@ -31,10 +35,12 @@ saccade_outs.in_bounds_roi = ib;
 
 do_save = true;
 
-norm_combs = [ false ];
+norm_combs = [ true ];
 per_monk_combs = [ false ];
 per_image_cat_combs = [ false ];
-comb_inds = dsp3.numel_combvec( norm_combs, per_monk_combs, per_image_cat_combs );
+per_correct_types = false;
+comb_inds = dsp3.numel_combvec( norm_combs, per_monk_combs ...
+  , per_image_cat_combs, per_correct_types );
 
 for i = 1:size(comb_inds, 2)
   inputs = {};
@@ -42,6 +48,7 @@ for i = 1:size(comb_inds, 2)
   is_norm = norm_combs(comb_inds(1, i));
   is_per_monk = per_monk_combs(comb_inds(2, i));
   is_per_image_cat = per_image_cat_combs(comb_inds(3, i));
+  is_per_correct = per_correct_types(comb_inds(4, i));
   
   base_subdir = '';
   base_subdir = sprintf( '%s-%s', base_subdir, ternary(is_norm, 'norm', 'non-norm') );
@@ -53,7 +60,10 @@ for i = 1:size(comb_inds, 2)
   
 %   funcs = {'in_bounds_roi_proportions', 'saccade_landing_point_stddev'};
   funcs = {'in_bounds_roi_proportions'};
-  mask_func = @(labels, mask) find(labels, 'not-scrambled', mask);
+%   funcs = { 'saccade_landing_point_scatter' };
+  mask_func = @(labels, mask) fcat.mask(labels, mask ...
+    , @find, {'face_bot_half', 'face_top_half'} ...
+  );
 
   hwwa_plot_saccade_info( saccade_outs ...
     , 'do_save', true ...
@@ -67,6 +77,7 @@ for i = 1:size(comb_inds, 2)
     , 'per_monkey', is_per_monk ...
     , 'per_image_category', is_per_image_cat ...
     , 'prefer_boxplot', true ...
+    , 'per_correct_type', is_per_correct ...
     , 'mask_func', mask_func ...
     , inputs{:} ...
   );

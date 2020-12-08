@@ -11,6 +11,7 @@ defaults.normalize = false;
 defaults.per_monkey = true;
 defaults.per_image_category = true;
 defaults.prefer_boxplot = false;
+defaults.per_correct_type = false;
 defaults.mask_func = @(labels, mask) mask;
 params = hwwa.parsestruct( defaults, varargin );
 
@@ -92,7 +93,11 @@ multiple_figures = true;
 subdirs = {'in_bounds_roi_proportions'};
 
 xcats = intersect( {'target_image_category', 'scrambled_type'}, spec );
-gcats = {'trial_type', 'correct', 'roi'};
+gcats = {'trial_type', 'roi'};
+
+if ( params.per_correct_type )
+  gcats{end+1} = 'correct';
+end
 
 if ( params.prefer_boxplot )
   [fcats, gcats, pcats] = distribute_bar_categories( fcats, xcats, gcats, pcats );
@@ -124,7 +129,13 @@ if ( params.normalize )
 end
 
 anova_each = csunion( fcats, {'trial_type'} );
-anova_factors = intersect( {'target_image_category', 'roi', 'drug'}, spec );
+anova_factors = intersect( {'target_image_category', 'scrambled_type' ...
+  , 'roi', 'drug'}, spec );
+
+if ( params.normalize )
+  anova_factors = setdiff( anova_factors, 'drug' );
+end
+
 in_bounds_anova_stats( pltdat, pltlabs, anova_each, anova_factors ...
   , rowmask(pltdat), subdirs, params );
 

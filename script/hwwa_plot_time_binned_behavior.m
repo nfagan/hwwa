@@ -10,21 +10,22 @@ defaults.mask_func = @(labels, mask) mask;
 defaults.saline_normalize = true;
 defaults.time_limits = [-inf, inf];
 defaults.per_monkey = false;
+defaults.per_drug = true;
 
 params = hwwa.parsestruct( defaults, varargin );
 
 mask = get_base_mask( labels, params.mask_func );
 
-social_appetitive_v_threat_normalized( data, labels, time, mask, true, params );
-social_appetitive_v_threat_normalized( data, labels, time, mask, false, params );
+% social_appetitive_v_threat_normalized( data, labels, time, mask, true, params );
+% social_appetitive_v_threat_normalized( data, labels, time, mask, false, params );
 
 appetitive_v_threat( data, labels, time, mask, false, params );
-appetitive_v_threat( data, labels, time, mask, true, params );
-appetitive_v_threat( data, labels, time ...
-  , find(labels, 'not-scrambled', mask), false, params );
+% appetitive_v_threat( data, labels, time, mask, true, params );
+% appetitive_v_threat( data, labels, time ...
+%   , find(labels, 'not-scrambled', mask), false, params );
 
-social_v_scrambled_normalized( data, labels, time, mask, params );
-social_v_scrambled( data, labels, time, mask, params );
+% social_v_scrambled( data, labels, time, mask, params );
+% social_v_scrambled_normalized( data, labels, time, mask, params );
 
 end
 
@@ -91,8 +92,16 @@ pl.add_smoothing = true;
 pl.y_lims = y_lims;
 
 fcats = {};
-gcats = { 'scrambled_type', 'target_image_category' };
-pcats = { 'drug', 'trial_type' };
+% gcats = { 'target_image_category' };
+gcats = { 'drug' };
+pcats = { 'trial_type', 'scrambled_type' };
+
+if ( params.per_drug )
+%   fcats{end+1} = 'drug';
+%   pcats{end+1} = 'drug';
+  fcats{end+1} = 'target_image_category';
+  pcats{end+1} = 'target_image_category';
+end
 
 if ( params.per_monkey )
   fcats{end+1} = 'monkey';
@@ -146,8 +155,8 @@ pl.y_lims = [0, 1];
 subdir = 'social_v_scrambled/';
 
 fcats = {};
-gcats = { 'drug' };
-pcats = { 'scrambled_type', 'trial_type' };
+gcats = { 'scrambled_type' };
+pcats = { 'drug', 'trial_type' };
 
 if ( params.per_monkey )
   fcats{end+1} = 'monkey';
@@ -196,8 +205,8 @@ for i = 1:numel(fig_I)
 
   if ( params.do_save )
     shared_utils.plot.fullscreen( fig );
-    save_p = hwwa.approach_avoid_data_path( params, 'plots', 'p_correct_over_time', subdir );
-    dsp3.req_savefig( fig, save_p, fig_labels, [fcats, gcats, pcats] );
+    save_p = hwwa.approach_avoid_data_path( params, 'plots', 'over_time', subdir );
+    dsp3.req_savefig( fig, save_p, fig_labels, [fcats, gcats, pcats], params.prefix );
   end
 end
 

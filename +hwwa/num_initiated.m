@@ -1,4 +1,4 @@
-function [num_init, init_labels] = num_initiated(labels, each, mask)
+function [num_init, init_labels, each_I] = num_initiated(labels, each, mask)
 
 [init_labels, each_I] = keepeach( labels', each, mask );
 num_init = nan( size(each_I) );
