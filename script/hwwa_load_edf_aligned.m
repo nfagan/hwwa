@@ -27,11 +27,38 @@ if ( isempty(outputs) )
   outs.event_key = {};
   outs.time = [];
 else
+  if ( ~isempty(params.stop_event_name) )
+    outputs = reconcile_sample_matrix_sizes( outputs );
+  end
+  
   outs = shared_utils.struct.soa( outputs ); 
   outs.roi_indices = make_roi_indices( outputs );
 end
 
 outs.params = params;
+
+end
+
+function outputs = reconcile_sample_matrix_sizes(outputs)
+
+cols = arrayfun( @(x) size(x.x, 2), outputs );
+max_col = max( cols );
+
+match_fields = { 'x', 'y', 'pupil' };
+
+for i = 1:numel(outputs)
+  n = cols(i);
+  
+  if ( n < max_col )
+    for j = 1:numel(match_fields)
+      src = outputs(i).(match_fields{j});
+      new_size = [ size(src, 1), max_col ];
+      dest = nan( new_size );
+      dest(:, 1:n) = src;
+      outputs(i).(match_fields{j}) = dest;
+    end
+  end
+end
 
 end
 
@@ -87,7 +114,7 @@ meta_file = shared_utils.general.get( files, 'meta' );
 roi_file = shared_utils.general.get( files, 'rois' );
 
 [starts, stops, one_start] = get_start_stop_times( events_file, params );
-assert( one_start, 'Stop events-by-name not yet implemented' );
+% assert( one_start, 'Stop events-by-name not yet implemented' );
 
 t = double( samples_file.t );
 
@@ -96,9 +123,14 @@ stop_inds = double( bfw.find_nearest(t, stops) );
 
 amts = stop_inds - start_inds + 1;
 max_amt = max( amts );
-valid_amts = find( amts == max_amt );
-num_valid = numel( valid_amts );
 
+if ( one_start )
+  valid_amts = find( amts == max_amt );
+else
+  valid_amts = find( amts ~= 1 );
+end
+
+num_valid = numel( valid_amts );
 use_fields = { 'x', 'y', 'pupil' };
 
 out = struct();
@@ -112,8 +144,9 @@ for i = 1:numel(use_fields)
     valid_ind = valid_amts(j);
     start = start_inds(valid_ind);
     stop = stop_inds(valid_ind);
+    n_assign = stop - start + 1;
     
-    aligned_samples(valid_ind, :) = samples(start:stop);
+    aligned_samples(valid_ind, 1:n_assign) = samples(start:stop);
   end
   
   out.(use_fields{i}) = aligned_samples;
